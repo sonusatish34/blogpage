@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Swal from 'sweetalert2';
 import { CKEditor } from "@ckeditor/ckeditor5-react";
-import Editor from "../../ckeditor5-custom-build/src/ckeditor";  
+import {Editor} from "../../ckeditor5-custom-build/src/ckeditor";  
 import { Timestamp, doc, setDoc } from 'firebase/firestore';
 import { fireDb } from '../../firebase';
 

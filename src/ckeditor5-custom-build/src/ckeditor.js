@@ -165,4 +165,4 @@ Editor.defaultConfig = {
 	}
 };
 
-export default Editor;
+export  {Editor};
