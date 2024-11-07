@@ -90,7 +90,7 @@ export default App;
 import { BrowserRouter } from "react-router-dom";
 
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import AdminLayout from "./Pages/AdminLayout";
+import yout from "./Pages/AdminLayout";
 import Dashboard from "./Admin/Dashboard";
 
 
