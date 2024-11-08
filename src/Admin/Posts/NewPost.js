@@ -6,7 +6,7 @@ import { Timestamp, addDoc, collection, setDoc } from 'firebase/firestore';
 import { getDocs, doc, deleteDoc } from "firebase/firestore";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 // import Editor from "ckeditor5-custom-build/build/ckeditor";
-import Editor from "../../ckeditor5-custom-build/build/ckeditor";
+import ClassicEditor from "/ckeditor5-custom-build/build/ckeditor";
 
 import { fireDb } from '../../firebase';
 
@@ -258,7 +258,7 @@ export default function AddPost() {
             className="border rounded-lg p-2"
           />
           <CKEditor
-            editor={Editor}
+            editor={ClassicEditor}
             data="<p>Hello from CKEditor 5!</p>"
             onReady={(editor) => {
               // You can store the "editor" and use when it is needed.
