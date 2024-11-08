@@ -34,7 +34,7 @@ function App() {
       <Route path="/Login" element={<Login />} />
       <Route path="/SnapShot" element={<SnapShot />} />
       <Route path="/Logout" element={<Logout />} />
-      <Route path="/" element={isAuthenticated?<Dashboard/>:Redirect} />
+      <Route path="/" element={<Dashboard/>} />
 
       <Route path="/Admin" element={ <Dashboard/> } />
       {/* Dashboard url */}
@@ -90,7 +90,7 @@ export default App;
 import { BrowserRouter } from "react-router-dom";
 
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import yout from "./Pages/AdminLayout";
+import AdminLayout from "./Pages/AdminLayout";
 import Dashboard from "./Admin/Dashboard";
 
 

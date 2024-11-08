@@ -1,46 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
+import CryptoJS from 'crypto-js';
+import AdminLayout from '../../layouts/AdminLayout';
+import { Timestamp, addDoc, collection, setDoc } from 'firebase/firestore';
+import { getDocs, doc, deleteDoc } from "firebase/firestore";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
-import {Editor} from "../../ckeditor5-custom-build/src/ckeditor";  
-import { Timestamp, doc, setDoc } from 'firebase/firestore';
+// import Editor from "ckeditor5-custom-build/build/ckeditor";
+import Editor from "../../ckeditor5-custom-build/build/ckeditor";
+
 import { fireDb } from '../../firebase';
 
-function AddPost() {
+export default function AddPost() {
   const [formData, setFormData] = useState({
+    id: '',
     title: '',
     Page: '',
     content: '',
-    keywords: '',
-    coverimages: '',
+    keywords: '',  // This will store keywords as a comma-separated string
+    coverimages: '',  // This will store the base64 image string
     blogfor: '',
     categoryname: ''
   });
 
   const [editorData, setEditorData] = useState('');
-  const [currentKeyword, setCurrentKeyword] = useState('');
+  const [selectedCat, setSelectedCat] = useState('');
+  const [currentKeyword, setCurrentKeyword] = useState(''); // Temporary state for current keyword
 
+  // Handle form changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
+  // Handle keyword input change 
   const handleKeywordChange = (e) => {
     setCurrentKeyword(e.target.value);
   };
 
+  // Handle adding keyword to the list (on Enter key press)
   const handleKeywordKeyDown = (e) => {
     if (e.key === 'Enter' && currentKeyword.trim()) {
+      // Add currentKeyword to the list of keywords
       const updatedKeywords = formData.keywords
         ? `${formData.keywords},${currentKeyword.trim()}`
         : currentKeyword.trim();
+
+      // Update formData with the new keywords string
       setFormData((prevData) => ({
         ...prevData,
         keywords: updatedKeywords,
       }));
-      setCurrentKeyword('');
+
+      // Clear the input after adding the keyword
+      // setCurrentKeyword('');
     }
   };
 
+  // Handle file input for cover image
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -48,7 +64,7 @@ function AddPost() {
       reader.onloadend = () => {
         setFormData((prevData) => ({
           ...prevData,
-          coverimages: reader.result,
+          coverimages: reader.result,  // Save the base64 string
         }));
       };
       reader.readAsDataURL(file);
@@ -70,8 +86,9 @@ function AddPost() {
     };
 
     try {
-      const productRef = doc(fireDb, "blogPost", newPost.title);
-      await setDoc(productRef, {
+      // Save post in Firestore under blogdb -> blogs collection
+      const blogRef = collection(fireDb, "blogPost"); // Reference to blogs collection under blogdb
+      await addDoc(blogRef, {
         ...newPost,
         time: Timestamp.now(),
         date: new Date().toLocaleString("en-US", {
@@ -84,9 +101,10 @@ function AddPost() {
       Swal.fire({
         icon: 'success',
         title: 'Post Created',
-        html: `Title: ${formData.title}<br>Page: ${formData.Page}<br>Content: ${editorData}<br>Keywords: ${formData.keywords}`,
+        html: `Title: ${formData.title}<br>Page: ${formData.Page}<br>Content: ${editorData}<br>Tags: ${formData.tags}<br>Keywords: ${formData.keywords}`,
       });
 
+      // Clear the form
       setFormData({
         title: '',
         Page: '',
@@ -98,44 +116,45 @@ function AddPost() {
       });
       setEditorData('');
     } catch (error) {
-      console.error('Error creating post:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'There was an issue creating the post.',
+        text: 'There was an issue creating the post. Please try again.',
       });
     }
   };
 
-  const handleEditorImageUpload = (editor) => {
-    editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
-      return {
-        upload: () => {
-          return new Promise((resolve, reject) => {
-            const data = new FormData();
-            loader.file.then((file) => {
-              data.append('upload', file);
-              fetch('http://localhost:5000/upload', {
-                method: 'POST',
-                body: data,
-              })
-                .then((response) => {
-                  if (!response.ok) throw new Error('Network response was not ok');
-                  return response.json();
-                })
-                .then((result) => resolve({ default: result.url }))
-                .catch((error) => {
-                  console.error('Image upload failed:', error);
-                  reject(error);
-                });
-            });
-          });
-        },
-      };
+  useEffect(() => {
+    const fetchPosts = async () => {
+      // setLoading(true);
+      const querySnapshot = await getDocs(collection(fireDb, "blogPost"));
+      const posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // setPostsData(posts);
+      console.log(posts, "----------11111111------");
+
+      // setLoading(false);
     };
+
+    fetchPosts();
+  }, []);
+
+  // Handle form clear
+  const handleClear = () => {
+    setFormData({
+      title: '',
+      Page: '',
+      content: '',
+      keywords: '',
+      tags: '',
+      coverimages: '',
+      blogfor: '',
+      categoryname: '',
+    });
+    setEditorData('');  // Reset the CKEditor content
   };
 
   return (
+    <AdminLayout>
     <div style={{ width: '900px' }} className="shadow-md flex-row px-1 mt-5 items-center pt-2 pb-2 mb-2 justify-center rounded-lg ml-10 bg-white">
       <h2 className="text-2xl font-semibold mb-4 text-center hover:text-indigo-500">Add New Post</h2>
       <form onSubmit={handleSubmit} className="space-y-4 w-full p-1">
@@ -169,9 +188,9 @@ function AddPost() {
             type="text"
             id="keywords"
             name="keywords"
-            value={currentKeyword}
+            value={currentKeyword}  // Bind to the temporary state
             onChange={handleKeywordChange}
-            onKeyDown={handleKeywordKeyDown}
+            onKeyDown={handleKeywordKeyDown}  // Add the enter key press handler
             required
             className="border rounded-lg p-2"
             placeholder="Press enter to add keywords"
@@ -187,17 +206,14 @@ function AddPost() {
         </div>
         <div className="flex flex-col">
           <label htmlFor="content" className="text-lg">Content</label>
-          <CKEditor
-            editor={Editor}
-            data="<p>Start typing your content...</p>"
-            onReady={(editor) => handleEditorImageUpload(editor)}
-            onChange={(event, editor) => {
-              const data = editor.getData();
-              setEditorData(data);
-            }}
-            onError={(error) => {
-              console.error('CKEditor error:', error);
-            }}
+          <input
+            type="text"
+            id="content"
+            name="content"
+            value={formData.content}
+            onChange={handleChange}
+            required
+            className="border rounded-lg p-2"
           />
         </div>
         <div className="flex flex-col pt-4">
@@ -241,6 +257,24 @@ function AddPost() {
             required
             className="border rounded-lg p-2"
           />
+          <CKEditor
+            editor={Editor}
+            data="<p>Hello from CKEditor 5!</p>"
+            onReady={(editor) => {
+              // You can store the "editor" and use when it is needed.
+              console.log("Editor is ready to use!", editor);
+            }}
+            onChange={(event, editor) => {
+              const data = editor.getData();
+              console.log({ event, editor, data });
+            }}
+            onBlur={(event, editor) => {
+              console.log("Blur.", editor);
+            }}
+            onFocus={(event, editor) => {
+              console.log("Focus.", editor);
+            }}
+          />
         </div>
         <button
           type="submit"
@@ -248,13 +282,16 @@ function AddPost() {
         >
           Submit
         </button>
+        <button
+          type="button"
+          onClick={handleClear}
+          className="bg-indigo-500 text-white py-2 px-4 rounded-lg ml-3 hover:bg-indigo-600 transition duration-300"
+        >
+          Clear
+        </button>
       </form>
     </div>
+    </AdminLayout>
   );
 }
 
-function Add() {
-  return <AddPost/>;
-}
-
-export default Add;

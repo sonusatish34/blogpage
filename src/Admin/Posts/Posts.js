@@ -12,9 +12,12 @@ function PostsData({ postsData, currentPage, itemsPerPage, setPostsData }) {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const postsToDisplay = postsData.slice(startIndex, endIndex);
-
+  console.log(postsData,"------pd----------");
+  
   const handleDelete = async (postId) => {
-    const postRef = doc(fireDb, "blogPost", postId);
+    const stringifiedId = String(postId);  // Make sure postId is a string
+    const postRef = doc(fireDb, "blogPost", stringifiedId);
+  
     Swal.fire({
       icon: 'warning',
       title: 'Are you sure you want to delete this post?',
@@ -24,13 +27,25 @@ function PostsData({ postsData, currentPage, itemsPerPage, setPostsData }) {
       cancelButtonText: 'Cancel',
     }).then(async (result) => {
       if (result.isConfirmed) {
-        await deleteDoc(postRef); // Delete from Firestore
-        const updatedPostsData = postsData.filter(post => post.id !== postId);
-        setPostsData(updatedPostsData);
-        Swal.fire('Deleted!', 'Your post has been deleted.', 'success');
+        try {
+          // Delete the post from Firestore
+          await deleteDoc(postRef);
+          
+          // Remove the post from local state (postsData)
+          const updatedPostsData = postsData.filter(post => String(post.id) !== stringifiedId);
+          setPostsData(updatedPostsData);  // Update the state with the filtered list
+          
+          // Success feedback
+          Swal.fire('Deleted!', 'Your post has been deleted.', 'success');
+        } catch (error) {
+          // Handle error
+          Swal.fire('Error', 'There was an issue deleting the post.', 'error');
+          console.error("Error deleting post:", error);
+        }
       }
     });
   };
+  
 
   return (
     <div className="container mx-auto p-4">
@@ -106,7 +121,7 @@ function Posts() {
   };
 
   const filteredPosts = postsData.filter((post) =>
-    post.title.toLowerCase().includes(searchQuery.toLowerCase())
+    post?.title?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleFilter = () => {

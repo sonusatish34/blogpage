@@ -1,36 +1,48 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Use useNavigate for React Router v6
+import { useNavigate } from "react-router-dom";
+import { getDocs, collection } from "firebase/firestore";
+import { fireDb } from "../firebase"; // Your Firebase config file
 
 function Login() {
   const [email, setEmail] = useState("admin@gmail.com");
   const [password, setPassword] = useState("admin");
   const [error, setError] = useState(null);
-  const navigate = useNavigate(); // Use useNavigate for React Router v6
+  const navigate = useNavigate();
 
-  // This function will be triggered when the user submits the login form
-  const handleLogin = (e) => {
+  // Fetch users from Firestore
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    // Get the list of users stored in localStorage
-    const usersData = JSON.parse(localStorage.getItem("usersData")) || [];
+    try {
+      // Reference to the 'users' collection in Firestore
+      const usersCollectionRef = collection(fireDb, "blogdb", "users", "users");
 
-    // Check if the entered email and password match any stored user
-    const foundUser = usersData.find((user) => user.email === email && user.password === password);
+      // Get all users data from Firestore
+      const querySnapshot = await getDocs(usersCollectionRef);
+      const usersData = querySnapshot.docs.map(doc => doc.data()); // Convert docs to data array
 
-    if (foundUser) {
-      // If user is found, login successful
-      // Store user details in sessionStorage (or localStorage, depending on your needs)
-      sessionStorage.setItem("authToken", "someGeneratedAuthToken"); // You can generate or retrieve an actual auth token
-      sessionStorage.setItem("AdminName", foundUser.name);
+      // Check if the entered email and password match any stored user
+      const foundUser = usersData.find((user) => user.email === email && user.password === password);
 
-      // Navigate to the admin dashboard or any other protected route
-      navigate("/Admin");
+      if (foundUser) {
+        // If user is found, login successful
+        console.log("Login successful:", foundUser.name);
 
-      console.log("Login successful:", foundUser.name);
-      setError(null); // Clear any previous errors
-    } else {
-      // If user is not found, display an error message
-      setError("Invalid email or password.");
+        // Store user details in sessionStorage or localStorage
+        sessionStorage.setItem("authToken", "someGeneratedAuthToken"); // You can generate or retrieve an actual auth token
+        sessionStorage.setItem("AdminName", foundUser.name);
+
+        // Navigate to the admin page or any other protected route
+        navigate("/Admin");
+        
+        setError(null); // Clear any previous errors
+      } else {
+        // If user is not found, display an error message
+        setError("Invalid email or password.");
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      setError("An error occurred while verifying credentials.");
     }
   };
 

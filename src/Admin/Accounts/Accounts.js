@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../layouts/AdminLayout';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faPen, faEye, faTimes, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faPen, faEye, faPlus } from '@fortawesome/free-solid-svg-icons';
 import Swal from 'sweetalert2';
 import Loading from '../../layouts/Loading';
+import { Timestamp, collection, getDocs ,setDoc,doc,deleteDoc } from 'firebase/firestore';
+import { fireDb } from '../../firebase';  // Make sure fireDb is correctly configured
 
 function UserAccountManager({ user, onUpdate, onDelete }) {
   const [updating, setUpdating] = useState(false);
@@ -22,7 +24,6 @@ function UserAccountManager({ user, onUpdate, onDelete }) {
       cancelButtonText: 'Cancel',
       showLoaderOnConfirm: true,
       preConfirm: () => {
-        // Update the user in localStorage
         onUpdate(updatedUser);
       },
     }).then((result) => {
@@ -49,7 +50,6 @@ function UserAccountManager({ user, onUpdate, onDelete }) {
       cancelButtonText: 'Cancel',
       showLoaderOnConfirm: true,
       preConfirm: () => {
-        // Delete the user from localStorage
         onDelete(user.id);
       },
     }).then((result) => {
@@ -112,8 +112,6 @@ function UserAccountManager({ user, onUpdate, onDelete }) {
 function Accounts() {
   const [usersData, setUsersData] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Manage modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newUser, setNewUser] = useState({
     name: '',
@@ -121,53 +119,99 @@ function Accounts() {
     password: '',
   });
 
-  // Fetch users from localStorage
   useEffect(() => {
-    const storedUsers = JSON.parse(localStorage.getItem('usersData')) || [];
-    setUsersData(storedUsers);
-    setLoading(false);
-  }, []);
+    const fetchUsersFromFirestore = async () => {
+      try {
+        // Fetch the users collection from Firestore
+        const usersCollectionRef = collection(fireDb, 'users');
+        const querySnapshot = await getDocs(usersCollectionRef);
+        const usersList = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        console.log(usersList,"-----ul--------");
+        
+        setUsersData(usersList);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching users from Firestore:", error);
+        setLoading(false);
+      }
+    };
+
+    fetchUsersFromFirestore();
+  }, []); // Only run once when component mounts
 
   const updateUser = (updatedUser) => {
     const updatedUsers = usersData.map((user) => (user.id === updatedUser.id ? updatedUser : user));
     setUsersData(updatedUsers);
-
-    // Save updated users back to localStorage
-    localStorage.setItem('usersData', JSON.stringify(updatedUsers));
   };
 
-  const deleteUser = (userId) => {
-    const updatedUsers = usersData.filter((user) => user.id !== userId);
-    setUsersData(updatedUsers);
-
-    // Save updated users back to localStorage
-    localStorage.setItem('usersData', JSON.stringify(updatedUsers));
+  // const deleteUser = (userId) => {
+  //   const updatedUsers = usersData.filter((user) => user.id !== userId);
+  //   setUsersData(updatedUsers);
+  // };
+  const deleteUser = async (userId) => {
+    try {
+      // Reference to the 'users' collection and the document to delete using the userId (document ID)
+      const userDocRef = doc(fireDb, 'users', userId);
+      
+      // Delete the document from Firestore
+      await deleteDoc(userDocRef);
+  
+      // Optionally, remove the user from the local state to reflect the change in the UI
+      const updatedUsers = usersData.filter(user => user.id !== userId); // Filter out the deleted user
+      setUsersData(updatedUsers);
+  
+      // Show a success message using SweetAlert
+      Swal.fire('Success', 'User deleted successfully!', 'success');
+    } catch (error) {
+      // In case of an error, log it and show an error message
+      console.error('Error deleting user:', error);
+      Swal.fire('Error', 'An error occurred while deleting the user. Please try again.', 'error');
+    }
   };
+  
+  
 
-  const handleCreateUser = () => {
-    // Validate the form inputs
+  const handleCreateUser = async () => {
     if (!newUser.name || !newUser.email || !newUser.password) {
       Swal.fire('Error', 'All fields are required', 'error');
       return;
     }
-
-    // Create the new user object
+    const timestampresent = Date.now();
+    const salt = Math.random().toString(36).substr(2, 9); // Random alphanumeric string of length 9
+  
+  // Combine timestamp and salt to form a unique document ID
+  const uniqueId = `${timestampresent}${salt}`;
     const newUserObj = {
-      id: usersData.length + 1, // Simulate a new ID
       name: newUser.name,
       email: newUser.email,
-      password:newUser.password,
+      password: newUser.password,
       created_at: new Date().toLocaleString(),
-      email_verified_at: null, // Simulate email verification status
+      time: Timestamp.now(),
+      id: timestampresent,
+      date: new Date().toLocaleString("en-US", {
+        month: "short",
+        day: "2-digit",
+        year: "numeric",
+      }),
     };
 
-    // Add the new user to the list and save it in localStorage
-    const updatedUsers = [...usersData, newUserObj];
-    setUsersData(updatedUsers);
-    localStorage.setItem('usersData', JSON.stringify(updatedUsers));
+    try {
+      // Create a new document in Firestore for the new user
+      const usersCollectionRef = collection(fireDb, 'users');
+      await setDoc(doc(usersCollectionRef, uniqueId), newUserObj);
 
-    // Close the modal
-    setIsModalOpen(false);
+      const updatedUsers = [...usersData, newUserObj];
+      setUsersData(updatedUsers);
+
+      setIsModalOpen(false);
+      Swal.fire('Success', 'User created successfully!', 'success');
+    } catch (error) {
+      console.error('Error creating user:', error);
+      Swal.fire('Error', 'An error occurred while creating the user. Please try again.', 'error');
+    }
   };
 
   return (
