@@ -15,7 +15,7 @@ function Login() {
 
     try {
       // Reference to the 'users' collection in Firestore
-      const usersCollectionRef = collection(fireDb, "blogdb", "users", "users");
+      const usersCollectionRef = collection(fireDb, "users");
 
       // Get all users data from Firestore
       const querySnapshot = await getDocs(usersCollectionRef);
@@ -29,8 +29,9 @@ function Login() {
         console.log("Login successful:", foundUser.name);
 
         // Store user details in sessionStorage or localStorage
-        sessionStorage.setItem("authToken", "someGeneratedAuthToken"); // You can generate or retrieve an actual auth token
+        sessionStorage.setItem("authToken", foundUser.id); // You can generate or retrieve an actual auth token
         sessionStorage.setItem("AdminName", foundUser.name);
+        sessionStorage.setItem("AdminEmail", foundUser.email);
 
         // Navigate to the admin page or any other protected route
         navigate("/Admin");

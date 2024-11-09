@@ -2,16 +2,17 @@ import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import CryptoJS from 'crypto-js';
 import AdminLayout from '../../layouts/AdminLayout';
-import { Timestamp, addDoc, collection, setDoc,getDocs } from 'firebase/firestore';
-// import Vio from "./Admin/Vio/TextEditor"
-import Vio from "../../Admin/Vio/TextEditor"
-
+import { Timestamp, addDoc, collection, setDoc } from 'firebase/firestore';
+import { getDocs, doc, deleteDoc } from "firebase/firestore";
+// import { CKEditor } from "@ckeditor/ckeditor5-react";
+// import Editor from "../../ckeditor5-custom-build/src/ckeditor";
+// import ClassicEditor from '/ckeditor5-custom-build/build/ckeditor'; // If it's in public
+import CKEditor from '@ckeditor/ckeditor5-react';
+// import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 
 import { fireDb } from '../../firebase';
-export default function AddPost() {
 
-
-  
+  const  NewPost = ()=> {
   const [formData, setFormData] = useState({
     id: '',
     title: '',
@@ -24,6 +25,11 @@ export default function AddPost() {
   });
 
   const [editorData, setEditorData] = useState('');
+
+    const handleEditorChange = (event, editor) => {
+        const data = editor.getData(); // Get the editor content
+        setEditorData(data);
+    };
   const [selectedCat, setSelectedCat] = useState('');
   const [currentKeyword, setCurrentKeyword] = useState(''); // Temporary state for current keyword
 
@@ -78,7 +84,7 @@ export default function AddPost() {
     const newPost = {
       title: formData.title,
       page: formData.Page,
-      content: "editorData",
+      content: editorData,
       keywords: formData.keywords,
       coverimages: formData.coverimages,
       blogfor: formData.blogfor,
@@ -102,7 +108,7 @@ export default function AddPost() {
       Swal.fire({
         icon: 'success',
         title: 'Post Created',
-        html: `Title: ${formData.title}<br>Page: ${formData.Page}<br>Content: ${"editorData"}<br>Tags: ${formData.tags}<br>Keywords: ${formData.keywords}`,
+        html: `Title: ${formData.title}<br>Page: ${formData.Page}<br>Content: ${editorData}<br>Tags: ${formData.tags}<br>Keywords: ${formData.keywords}`,
       });
 
       // Clear the form
@@ -115,7 +121,7 @@ export default function AddPost() {
         blogfor: '',
         categoryname: '',
       });
-      // setEditorData('');
+      setEditorData('');
     } catch (error) {
       Swal.fire({
         icon: 'error',
@@ -173,7 +179,8 @@ export default function AddPost() {
         </div>
         <div className="flex flex-col">
           <label htmlFor="Page" className="text-lg">Page URL</label>
-          <input
+          <p>{formData.title}</p>
+          {/* <input
             type="text"
             id="Page"
             name="Page"
@@ -181,7 +188,8 @@ export default function AddPost() {
             onChange={handleChange}
             required
             className="border rounded-lg p-2"
-          />
+          /> */}
+
         </div>
         <div className="flex flex-col">
           <label htmlFor="keywords" className="text-lg">Keywords</label>
@@ -258,9 +266,13 @@ export default function AddPost() {
             required
             className="border rounded-lg p-2"
           />
-          <Vio/>
-          
+          <CKEditor
+                editor={ClassicEditor}  // Use the classic editor build
+                data={editorData}        // Initial content for the editor
+                onChange={handleEditorChange}  // Handle content changes
+            />
         </div>
+        <div dangerouslySetInnerHTML={{__html:editorData}}></div>
         <button
           type="submit"
           className="bg-indigo-500 text-white py-2 px-4 rounded-lg hover:bg-indigo-600 transition duration-300"
@@ -278,5 +290,6 @@ export default function AddPost() {
     </div>
     </AdminLayout>
   );
+  
 }
-
+export default NewPost;

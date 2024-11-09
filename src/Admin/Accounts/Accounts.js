@@ -42,6 +42,7 @@ function UserAccountManager({ user, onUpdate, onDelete }) {
       title: 'Are you sure you want to delete this user account?',
       icon: 'warning',
       html: `
+        <p><b>Username</b>: ${user.id}</p>
         <p><b>Username</b>: ${user.name}</p>
         <p><b>Email</b>: ${user.email}</p>
       `,
@@ -152,10 +153,12 @@ function Accounts() {
   //   setUsersData(updatedUsers);
   // };
   const deleteUser = async (userId) => {
+
     try {
       // Reference to the 'users' collection and the document to delete using the userId (document ID)
       const userDocRef = doc(fireDb, 'users', userId);
-      
+        console.log(userDocRef,"---------==========------------");
+        
       // Delete the document from Firestore
       await deleteDoc(userDocRef);
   
@@ -183,14 +186,14 @@ function Accounts() {
     const salt = Math.random().toString(36).substr(2, 9); // Random alphanumeric string of length 9
   
   // Combine timestamp and salt to form a unique document ID
-  const uniqueId = `${timestampresent}${salt}`;
+  // const uniqueId = `${timestampresent}${salt}`;
     const newUserObj = {
       name: newUser.name,
       email: newUser.email,
       password: newUser.password,
       created_at: new Date().toLocaleString(),
       time: Timestamp.now(),
-      id: timestampresent,
+      id: `${timestampresent}+${salt}`,
       date: new Date().toLocaleString("en-US", {
         month: "short",
         day: "2-digit",
@@ -201,7 +204,7 @@ function Accounts() {
     try {
       // Create a new document in Firestore for the new user
       const usersCollectionRef = collection(fireDb, 'users');
-      await setDoc(doc(usersCollectionRef, uniqueId), newUserObj);
+      await setDoc(doc(usersCollectionRef, newUserObj.id), newUserObj);
 
       const updatedUsers = [...usersData, newUserObj];
       setUsersData(updatedUsers);
@@ -294,6 +297,7 @@ function Accounts() {
                     onDelete={deleteUser}
                   />
                 ))}
+                {/* <p>kk</p> */}
               </tbody>
             </table>
           </div>

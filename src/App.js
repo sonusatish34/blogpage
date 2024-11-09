@@ -8,6 +8,7 @@ import Categories from "./Admin/Categories/Categories";
 import Inbox from "./Admin/Inbox/Inbox";
 import Accounts from "./Admin/Accounts/Accounts";
 import Add from "./Admin/Posts/NewPost";
+import Vio from "./Admin/Vio/TextEditor"
 import View from "./Admin/Posts/ViewPost";
 import UpdatePost from "./Admin/Posts/UpdatePost";
 import ViewMessage from "./Admin/Inbox/ViewMessage";
@@ -32,7 +33,7 @@ function App() {
     <BrowserRouter>
       <Routes>
       <Route path="/Login" element={<Login />} />
-      <Route path="/SnapShot" element={<SnapShot />} />
+      {/* <Route path="/SnapShot" element={<SnapShot />} /> */}
       <Route path="/Logout" element={<Logout />} />
       <Route path="/" element={<Dashboard/>} />
 
@@ -44,6 +45,7 @@ function App() {
       <Route path="/Admin/Posts" element={ <Posts/> } />
       {/* Add a new post */}
       <Route path="/Admin/Post/New" element={ <Add/> } />
+      <Route path="/Admin/Vio/Vio" element={ <Vio/> } />
       {/* Update a  post */}
       <Route path="/Admin/Posts/UpdatePost/:id" element={ <UpdatePost/> } />
       {/* show post details */}
