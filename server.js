@@ -48,40 +48,85 @@
 //   console.log(`Server is running on http://localhost:${port}`);
 // });
 
+// const express = require('express');
+// const multer = require('multer');
+// const cors = require('cors');
+// const path = require('path');
+
+// const app = express();
+// const port = 5000;
+
+// // Middleware
+// app.use(cors());
+// app.use(express.static('uploads'));
+
+// // Multer configuration
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, 'uploads/');
+//   },
+//   filename: (req, file, cb) => {
+//     cb(null, Date.now() + path.extname(file.originalname));
+//   },
+// });
+
+// const upload = multer({ storage });
+
+// // Image upload route
+// app.post('/api/upload', upload.single('image'), (req, res) => {
+//   if (!req.file) {
+//     return res.status(400).send('No file uploaded.');
+//   }
+
+//   // Send back the URL of the uploaded image
+//   res.json({ url: `http://localhost:${port}/uploads/${req.file.filename}` });
+// });
+
+// app.listen(port, () => {
+//   console.log(`Server running on http://localhost:${port}`);
+// });
+
+
+
+// Existing imports and setup
 const express = require('express');
 const multer = require('multer');
-const cors = require('cors');
 const path = require('path');
+const cors = require('cors');
 
 const app = express();
-const port = 5000;
-
-// Middleware
 app.use(cors());
-app.use(express.static('uploads'));
 
-// Multer configuration
+// Set up multer storage
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
+  destination: './uploads',
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
+    cb(null, `${Date.now()}-${file.originalname}`);
   },
 });
 
 const upload = multer({ storage });
 
-// Image upload route
-app.post('/api/upload', upload.single('image'), (req, res) => {
+// Endpoint for uploading cover image
+app.post('/upload', upload.single('coverImage'), (req, res) => {
   if (!req.file) {
-    return res.status(400).send('No file uploaded.');
+    return res.status(400).json({ error: 'No file uploaded' });
   }
-
-  // Send back the URL of the uploaded image
-  res.json({ url: `http://localhost:${port}/uploads/${req.file.filename}` });
+  const filePath = `/uploads/${req.file.filename}`;
+  res.status(200).json({ filePath });
 });
 
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+// Endpoint for uploading images from the Quill editor
+app.post('/upload-editor-image', upload.single('editorImage'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+  const filePath = `/uploads/${req.file.filename}`;
+  res.status(200).json({ filePath });
 });
+
+// Serve images from the uploads folder
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Start server
+app.listen(5000, () => console.log('Server started on http://localhost:5000'));

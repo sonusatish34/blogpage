@@ -1,17 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2';
 import CryptoJS from 'crypto-js';
 import AdminLayout from '../../layouts/AdminLayout';
-import { Timestamp, addDoc, collection, setDoc,getDocs } from 'firebase/firestore';
+import { Timestamp, addDoc, collection, setDoc, getDocs } from 'firebase/firestore';
 // import Vio from "./Admin/Vio/TextEditor"
 import Vio from "../../Admin/Vio/TextEditor"
-
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css'; // import styles
+import axios from 'axios'; // for handling image upload
 
 import { fireDb } from '../../firebase';
 export default function AddPost() {
 
 
-  
+
   const [formData, setFormData] = useState({
     id: '',
     title: '',
@@ -58,19 +60,54 @@ export default function AddPost() {
   };
 
   // Handle file input for cover image
-  const handleImageUpload = (e) => {
+  // const handleImageUpload = (e) => {
+  //   const file = e.target.files[0];
+  //   if (file) {
+  //     const reader = new FileReader();
+  //     reader.onloadend = () => {
+  //       setFormData((prevData) => ({
+  //         ...prevData,
+  //         coverimages: reader.result,  // Save the base64 string
+  //       }));
+  //     };
+  //     reader.readAsDataURL(file);
+  //   }
+  // };
+
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
+      const formData = new FormData();
+      formData.append('coverImage', file);
+
+      try {
+        const response = await axios.post('http://localhost:5000/upload', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        const { filePath } = response.data;
+        
+        // Store the file path in Firestore instead of base64
         setFormData((prevData) => ({
           ...prevData,
-          coverimages: reader.result,  // Save the base64 string
+          coverimages: filePath,
+         
         }));
-      };
-      reader.readAsDataURL(file);
+        console.log(formData,"000000000000");
+        
+        
+      } catch (error) {
+        console.error('Error uploading the image:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Upload Error',
+          text: 'There was an error uploading the image. Please try again.',
+        });
+      }
     }
   };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -78,7 +115,7 @@ export default function AddPost() {
     const newPost = {
       title: formData.title,
       page: formData.Page,
-      content: "editorData",
+      content: editorHtml,
       keywords: formData.keywords,
       coverimages: formData.coverimages,
       blogfor: formData.blogfor,
@@ -131,7 +168,8 @@ export default function AddPost() {
       const querySnapshot = await getDocs(collection(fireDb, "blogPost"));
       const posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       // setPostsData(posts);
-      console.log(posts, "----------11111111------");
+      // console.log(posts, "----------11111111------");
+
 
       // setLoading(false);
     };
@@ -154,129 +192,165 @@ export default function AddPost() {
     setEditorData('');  // Reset the CKEditor content
   };
 
+  const [editorHtml, setEditorHtml] = useState('');
+  const quillRef = useRef(null); // Create a reference using useRef
+  console.log(editorHtml, "-------eh");
+
+  // Custom image handler
+
+  const modules = {
+    toolbar: [
+      [{ 'header': '1' }, { 'header': '2' }, { 'font': [] }, { 'size': ['small', 'normal', 'large', 'huge'] }], // Adding custom font sizes
+      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+      ['bold', 'italic', 'underline', 'strike'],
+      ['blockquote', 'code-block'],
+      ['link', 'image'], // Add the image button in the toolbar
+      [{ 'align': [] }],
+      ['clean'] // Add a clean button to clear the content
+       // Add font color and background color to the toolbar
+    [{ 'color': [] }], // Color dropdown
+    [{ 'background': [] }], // Background color dropdown
+    ]
+  };
+
+  // Use the `formats` prop to specify the allowed formats in the editor
+  const formats = [
+    'header', 'font', 'size', 'list', 'bold', 'italic', 'underline', 'strike',
+    'blockquote', 'code-block', 'link', 'image', 'align','color', 'background'
+  ];
+
+
   return (
     <AdminLayout>
-    <div style={{ width: '900px' }} className="shadow-md flex-row px-1 mt-5 items-center pt-2 pb-2 mb-2 justify-center rounded-lg ml-10 bg-white">
-      <h2 className="text-2xl font-semibold mb-4 text-center hover:text-indigo-500">Add New Post</h2>
-      <form onSubmit={handleSubmit} className="space-y-4 w-full p-1">
-        <div className="flex flex-col">
-          <label htmlFor="title" className="text-lg">Title</label>
-          <input
-            type="text"
-            id="title"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            required
-            className="border rounded-lg p-2"
-          />
-        </div>
-        <div className="flex flex-col">
-          <label htmlFor="Page" className="text-lg">Page URL</label>
-          <input
-            type="text"
-            id="Page"
-            name="Page"
-            value={formData.Page}
-            onChange={handleChange}
-            required
-            className="border rounded-lg p-2"
-          />
-        </div>
-        <div className="flex flex-col">
-          <label htmlFor="keywords" className="text-lg">Keywords</label>
-          <input
-            type="text"
-            id="keywords"
-            name="keywords"
-            value={currentKeyword}  // Bind to the temporary state
-            onChange={handleKeywordChange}
-            onKeyDown={handleKeywordKeyDown}  // Add the enter key press handler
-            required
-            className="border rounded-lg p-2"
-            placeholder="Press enter to add keywords"
-          />
-          <div className="mt-2">
-            <strong>Keywords: </strong>
-            {formData.keywords.split(',').map((keyword, index) => (
-              <span key={index} className="badge bg-indigo-200 text-indigo-800 rounded px-2 py-1 mr-2">
-                {keyword}
-              </span>
-            ))}
+      <div style={{ width: '900px' }} className="shadow-md flex-row px-1 mt-5 items-center pt-2 pb-2 mb-2 justify-center rounded-lg ml-10 bg-white">
+        <h2 className="text-2xl font-semibold mb-4 text-center hover:text-indigo-500">Add New Post</h2>
+        <form onSubmit={handleSubmit} className="space-y-4 w-full p-1">
+          <div className="flex flex-col">
+            <label htmlFor="title" className="text-lg">Title</label>
+            <input
+              type="text"
+              id="title"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              required
+              className="border rounded-lg p-2"
+            />
           </div>
-        </div>
-        <div className="flex flex-col">
-          <label htmlFor="content" className="text-lg">Content</label>
-          <input
-            type="text"
-            id="content"
-            name="content"
-            value={formData.content}
-            onChange={handleChange}
-            required
-            className="border rounded-lg p-2"
-          />
-        </div>
-        <div className="flex flex-col pt-4">
-          <label htmlFor="coverimages" className="text-lg">Cover Image</label>
-          <input
-            type="file"
-            id="coverimages"
-            name="coverimages"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="border rounded-lg p-2"
-          />
-          {formData.coverimages && (
+          <div className="flex flex-col">
+            <label htmlFor="Page" className="text-lg">Page URL</label>
+            <input
+              type="text"
+              id="Page"
+              name="Page"
+              value={formData.Page}
+              onChange={handleChange}
+              required
+              className="border rounded-lg p-2"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label htmlFor="keywords" className="text-lg">Keywords</label>
+            <input
+              type="text"
+              id="keywords"
+              name="keywords"
+              value={currentKeyword}  // Bind to the temporary state
+              onChange={handleKeywordChange}
+              onKeyDown={handleKeywordKeyDown}  // Add the enter key press handler
+              required
+              className="border rounded-lg p-2"
+              placeholder="Press enter to add keywords"
+            />
             <div className="mt-2">
-              <img src={formData.coverimages} alt="Cover Preview" className="w-32 h-32 object-cover rounded" />
+              <strong>Keywords: </strong>
+              {formData.keywords.split(',').map((keyword, index) => (
+                <span key={index} className="badge bg-indigo-200 text-indigo-800 rounded px-2 py-1 mr-2">
+                  {keyword}
+                </span>
+              ))}
             </div>
-          )}
-        </div>
-        <div className="flex flex-col pt-4">
-          <label htmlFor="blogfor" className="text-lg">Blog For</label>
-          <select
-            id="blogfor"
-            name="blogfor"
-            value={formData.blogfor}
-            onChange={handleChange}
-            className="border rounded-lg p-2"
+          </div>
+          <div className="flex flex-col">
+            <label htmlFor="content" className="text-lg">Content</label>
+            <input
+              type="text"
+              id="content"
+              name="content"
+              value={formData.content}
+              onChange={handleChange}
+              required
+              className="border rounded-lg p-2"
+            />
+          </div>
+          <div className="flex flex-col pt-4">
+            <label htmlFor="coverimages" className="text-lg">Cover Image</label>
+            <input
+              type="file"
+              id="coverimages"
+              name="coverimages"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="border rounded-lg p-2"
+            />
+            {formData.coverimages && (
+              <div className="mt-2">
+                <img src={`http://localhost:5000${formData.coverimages}`} alt="Cover Preview" className="w-32 h-32 object-cover rounded" />
+              </div>
+            )}
+
+          </div>
+          <div className="flex flex-col pt-4">
+            <label htmlFor="blogfor" className="text-lg">Blog For</label>
+            <select
+              id="blogfor"
+              name="blogfor"
+              value={formData.blogfor}
+              onChange={handleChange}
+              className="border rounded-lg p-2"
+            >
+              <option value="Dozzy">Dozzy</option>
+              <option value="LDC">LDC</option>
+              <option value="SDC">SDC</option>
+            </select>
+          </div>
+          <div className="flex flex-col pt-4">
+            <label htmlFor="categoryname" className="text-lg">Category Name</label>
+            <input
+              type="text"
+              id="categoryname"
+              name="categoryname"
+              value={formData.categoryname}
+              onChange={handleChange}
+              required
+              className="border rounded-lg p-2"
+            />
+            {/* <Vio /> */}
+            <div>
+              <ReactQuill
+                value={editorHtml}
+                onChange={setEditorHtml}
+                modules={modules}
+                formats={formats}
+                ref={quillRef} // Use the ref here
+              />
+            </div>
+          </div>
+          <button
+            type="submit"
+            className="bg-indigo-500 text-white py-2 px-4 rounded-lg hover:bg-indigo-600 transition duration-300"
           >
-            <option value="Dozzy">Dozzy</option>
-            <option value="LDC">LDC</option>
-            <option value="SDC">SDC</option>
-          </select>
-        </div>
-        <div className="flex flex-col pt-4">
-          <label htmlFor="categoryname" className="text-lg">Category Name</label>
-          <input
-            type="text"
-            id="categoryname"
-            name="categoryname"
-            value={formData.categoryname}
-            onChange={handleChange}
-            required
-            className="border rounded-lg p-2"
-          />
-          <Vio/>
-          
-        </div>
-        <button
-          type="submit"
-          className="bg-indigo-500 text-white py-2 px-4 rounded-lg hover:bg-indigo-600 transition duration-300"
-        >
-          Submit
-        </button>
-        <button
-          type="button"
-          onClick={handleClear}
-          className="bg-indigo-500 text-white py-2 px-4 rounded-lg ml-3 hover:bg-indigo-600 transition duration-300"
-        >
-          Clear
-        </button>
-      </form>
-    </div>
+            Submit
+          </button>
+          <button
+            type="button"
+            onClick={handleClear}
+            className="bg-indigo-500 text-white py-2 px-4 rounded-lg ml-3 hover:bg-indigo-600 transition duration-300"
+          >
+            Clear
+          </button>
+        </form>
+      </div>
     </AdminLayout>
   );
 }
-

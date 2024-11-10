@@ -80,7 +80,7 @@ function Getpost({ postId }) {
             <img src={postData?.picture} alt="" className="w-full h-auto" />
           </div>
           <div className="mt-2 mb-2 max-w-2xl">
-            <span className="text-gray-600">Created at: </span>{postData?.created_at}
+            <span className="text-gray-600">Created at: </span>{postData?.createdAt}
           </div>
           <div className="mt-2 mb-2 max-w-2xl">
             <span className="text-gray-600">Updated at: </span>{postData?.updated_at}
@@ -89,9 +89,12 @@ function Getpost({ postId }) {
             <span className="text-gray-600">Likes: </span>{postData?.likes}
           </div>
           <div className="mt-2 mb-2 max-w-2xl">
-            <span className="text-gray-600">Category: </span>{postData?.category}
+            <span className="text-gray-600">Category: </span>{postData?.categoryname}
           </div>
-          <div className="mt-2 mb-2 max-w-2xl">{postData?.content}</div>
+          {/* <div className="mt-2 mb-2 max-w-2xl">{postData?.content}</div> */}
+          <div dangerouslySetInnerHTML={{__html:postData?.content}}></div>
+
+          <p>hi</p>
           {postData?.comments && postData?.comments.length === 0 ? 
             <div className="mt-2 mb-2 max-w-2xl text-red-500 text-lg font-bold">
               No Comments on this post
@@ -111,7 +114,7 @@ function Getpost({ postId }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {postData?.comments.map((comment) => (
+                    {postData?.comments?.map((comment) => (
                       <tr key={comment.id}>
                         <td className="py-2 px-3">{comment.username}</td>
                         <td className="py-2 px-3">{comment.body}</td>
