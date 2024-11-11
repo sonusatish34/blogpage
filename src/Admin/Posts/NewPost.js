@@ -65,29 +65,20 @@ export default function AddPost() {
     const file = e.target.files[0];
     if (file) {
       const formData = new FormData();
-      formData.append('coverImage', file); // Add the file to the form data
-
+      formData.append('coverImage', file);  // Add file to FormData
+  
       try {
-        // Use the environment variable for the backend API URL
-        const apiUrl = `${process.env.REACT_APP_API_URL}/upload`;
-        console.log('API URL:', apiUrl);  // Log the full URL for debugging
-        const response = await axios.post(`${process.env.REACT_APP_API_URL}/upload`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+        const apiUrl = `/api/upload`;  // Vercel automatically uses the serverless function at /api/upload
+        const response = await axios.post(apiUrl, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
         });
-
-        // The server returns the file path where the image is saved
-        const { filePath } = response.data;
-
-        // Update the formData with the file path (which can be used to render the image)
+  
+        const { filePath } = response.data;  // Get the file path returned by the server
         setFormData((prevData) => ({
           ...prevData,
-          coverimages: filePath, // Store the relative file path in state
+          coverimages: filePath,  // Save the relative path to formData
         }));
-
-        console.log(filePath, "Uploaded file path");
-
+  
       } catch (error) {
         console.error('Error uploading the image:', error);
         Swal.fire({
@@ -98,6 +89,7 @@ export default function AddPost() {
       }
     }
   };
+  
 
 
   const imageHandler = async () => {
@@ -346,11 +338,11 @@ export default function AddPost() {
               onChange={handleImageUpload}
               className="border rounded-lg p-2"
             />
-            {formData.coverimages && (
-              <div className="mt-2">
-                <img src={`http://localhost:5000${formData.coverimages}`} alt="Cover Preview" className="w-32 h-32 object-cover rounded" />
-              </div>
-            )}
+            <img
+              src={`https://your-backend-url.com${formData.coverimages}`}  // Adjust URL for public access
+              alt="Cover Preview"
+              className="w-32 h-32 object-cover rounded"
+            />
           </div>
           <div className="flex flex-col pt-4">
             <label htmlFor="blogfor" className="text-lg">Blog For</label>
