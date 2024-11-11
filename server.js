@@ -93,39 +93,41 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const cors = require('cors');
-
+const fs = require('fs');
 const app = express();
+
 app.use(cors());
 
-// Set up multer storage
+// Create an uploads folder if it doesn't exist
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
+
+// Set up multer storage for local file storage
 const storage = multer.diskStorage({
-  destination: './uploads',
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+  destination: (req, file, cb) => {
+    cb(null, uploadDir); // Store in the uploads directory
   },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname)); // Use original extension
+  }
 });
 
 const upload = multer({ storage });
 
-// Endpoint for uploading cover image
+// Endpoint for uploading the cover image to local disk
 app.post('/upload', upload.single('coverImage'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
-  const filePath = `/uploads/${req.file.filename}`;
+
+  const filePath = `/uploads/${req.file.filename}`; // Path to the file relative to your server
   res.status(200).json({ filePath });
 });
 
-// Endpoint for uploading images from the Quill editor
-app.post('/upload-editor-image', upload.single('editorImage'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
-  }
-  const filePath = `/uploads/${req.file.filename}`;
-  res.status(200).json({ filePath });
-});
-
-// Serve images from the uploads folder
+// Serve the uploaded images from the uploads folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Start server

@@ -13,7 +13,7 @@ import { fireDb } from '../../firebase';
 export default function AddPost() {
 
 
-
+  const [postauthor, setPostauthor] = useState('')
   const [formData, setFormData] = useState({
     id: '',
     title: '',
@@ -79,7 +79,7 @@ export default function AddPost() {
     if (file) {
       const formData = new FormData();
       formData.append('coverImage', file);
-
+  
       try {
         const response = await axios.post('http://localhost:5000/upload', formData, {
           headers: {
@@ -87,16 +87,14 @@ export default function AddPost() {
           },
         });
         const { filePath } = response.data;
-        
-        // Store the file path in Firestore instead of base64
+  
+        // Store the file path in state (the URL of the uploaded image)
         setFormData((prevData) => ({
           ...prevData,
           coverimages: filePath,
-         
         }));
-        console.log(formData,"000000000000");
-        
-        
+        console.log(filePath, "Uploaded file path");
+  
       } catch (error) {
         console.error('Error uploading the image:', error);
         Swal.fire({
@@ -107,6 +105,7 @@ export default function AddPost() {
       }
     }
   };
+  
 
 
   const handleSubmit = async (e) => {
@@ -129,6 +128,7 @@ export default function AddPost() {
       await addDoc(blogRef, {
         ...newPost,
         time: Timestamp.now(),
+        postauthor: postauthor,
         date: new Date().toLocaleString("en-US", {
           month: "short",
           day: "2-digit",
@@ -169,7 +169,7 @@ export default function AddPost() {
       const posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       // setPostsData(posts);
       // console.log(posts, "----------11111111------");
-
+      setPostauthor(sessionStorage.getItem('AdminName'))
 
       // setLoading(false);
     };
