@@ -60,27 +60,30 @@ export default function AddPost() {
   };
 
 
-
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
       const formData = new FormData();
-      formData.append('coverImage', file);  // Add file to FormData
+      formData.append('coverImage', file); // Add file to formData
   
       try {
-        const apiUrl = `/api/upload`;  // Vercel automatically uses the serverless function at /api/upload
-        const response = await axios.post(apiUrl, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
+        const response = await axios.post('/api/upload', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data', // Correct content type for file uploads
+          },
         });
   
-        const { filePath } = response.data;  // Get the file path returned by the server
-        setFormData((prevData) => ({
-          ...prevData,
-          coverimages: filePath,  // Save the relative path to formData
-        }));
-  
+        if (response.data.filePath) {
+          setFormData((prevData) => ({
+            ...prevData,
+            coverimages: response.data.filePath, // Set the file path from the response
+          }));
+          console.log("File uploaded successfully:", response.data.filePath);
+        } else {
+          console.error('Error uploading file:', response.data.error);
+        }
       } catch (error) {
-        console.error('Error uploading the image:', error);
+        console.error('Error uploading image:', error);
         Swal.fire({
           icon: 'error',
           title: 'Upload Error',
@@ -89,6 +92,7 @@ export default function AddPost() {
       }
     }
   };
+  
   
 
 
