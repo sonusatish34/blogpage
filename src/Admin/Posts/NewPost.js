@@ -59,46 +59,33 @@ export default function AddPost() {
     }
   };
 
-  // Handle file input for cover image
-  // const handleImageUpload = (e) => {
-  //   const file = e.target.files[0];
-  //   if (file) {
-  //     const reader = new FileReader();
-  //     reader.onloadend = () => {
-  //       setFormData((prevData) => ({
-  //         ...prevData,
-  //         coverimages: reader.result,  // Save the base64 string
-  //       }));
-  //     };
-  //     reader.readAsDataURL(file);
-  //   }
-  // };
+
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
       const formData = new FormData();
       formData.append('coverImage', file); // Add the file to the form data
-
+  
       try {
-        // Send the image to the server (which is running on localhost for testing)
-        const response = await axios.post('http://localhost:5000/upload', formData, {
+        // Use the environment variable for the backend API URL
+        const response = await axios.post(`${process.env.REACT_APP_API_URL}/upload`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
-
+  
         // The server returns the file path where the image is saved
         const { filePath } = response.data;
-
+  
         // Update the formData with the file path (which can be used to render the image)
         setFormData((prevData) => ({
           ...prevData,
           coverimages: filePath, // Store the relative file path in state
         }));
-
+  
         console.log(filePath, "Uploaded file path");
-
+  
       } catch (error) {
         console.error('Error uploading the image:', error);
         Swal.fire({
@@ -109,16 +96,48 @@ export default function AddPost() {
       }
     }
   };
+  
+  
+  const imageHandler = async () => {
+    const input = document.createElement('input');
+    input.setAttribute('type', 'file');
+    input.setAttribute('accept', 'image/*');
+    
+    input.click();
+  
+    input.onchange = async () => {
+      const file = input.files[0]; // Corrected the way to access the selected file
+  
+      if (file) {
+        try {
+          // Call your image upload handler (it sends the file to the backend)
+          const filePath = await handleImageUpload(file);
+          if (filePath) {
+            // Get the cursor position from the Quill editor
+            const range = quillRef.current.getEditor().getSelection();
+            if (range) {
+              // Insert the image into the editor at the cursor's position
+              quillRef.current.getEditor().insertEmbed(range.index, 'image', `http://localhost:5000${filePath}`);
+              console.log("Image successfully inserted into the editor!");
+            }
+          }
+        } catch (error) {
+          console.error("Image upload failed:", error);
+        }
+      }
+    };
+  };
+  
 
-
-
+  
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const newPost = {
       title: formData.title,
       page: formData.Page,
-      content: encryptedData,
+      content: editorHtml,
       keywords: formData.keywords,
       coverimages: formData.coverimages,
       blogfor: formData.blogfor,
@@ -174,7 +193,7 @@ export default function AddPost() {
       // setPostsData(posts);
       // console.log(posts, "----------11111111------");
       setPostauthor(sessionStorage.getItem('AdminName'))
-
+      console.log(formData,"fd---000");
       // setLoading(false);
     };
 
@@ -208,7 +227,25 @@ export default function AddPost() {
   console.log("Decrypted Data: ", decryptedData);
 
   // Custom image handler
+  useEffect(() => {
+    if (quillRef.current) {
+      const quillEditor = quillRef.current.getEditor();
+      const toolbar = quillEditor.getModule('toolbar');
 
+      // Manually add the custom image handler
+      const imageButton = toolbar.container.querySelector('.ql-image');
+      if (imageButton) {
+        imageButton.addEventListener('click', imageHandler);
+      }
+
+      // Cleanup the event listener when the component unmounts
+      return () => {
+        if (imageButton) {
+          imageButton.removeEventListener('click', imageHandler);
+        }
+      };
+    }
+  }, []);
   const modules = {
     toolbar: [
       [{ 'header': '1' }, { 'header': '2' }, { 'font': [] }, { 'size': ['small', 'normal', 'large', 'huge'] }], // Adding custom font sizes
@@ -221,7 +258,8 @@ export default function AddPost() {
       // Add font color and background color to the toolbar
       [{ 'color': [] }], // Color dropdown
       [{ 'background': [] }], // Background color dropdown
-    ]
+    ],
+    // imageHandler: imageHandler,
   };
 
   // Use the `formats` prop to specify the allowed formats in the editor
@@ -250,7 +288,7 @@ export default function AddPost() {
           </div>
           <div className="flex flex-col">
             <label htmlFor="Page" className="text-lg">Page URL</label>
-            <input
+            {/* <input
               type="text"
               id="Page"
               name="Page"
@@ -258,7 +296,8 @@ export default function AddPost() {
               onChange={handleChange}
               required
               className="border rounded-lg p-2"
-            />
+            /> */}
+            {formData.title?.replaceAll(' ','-').toLowerCase()}
           </div>
           <div className="flex flex-col">
             <label htmlFor="keywords" className="text-lg">Keywords</label>
@@ -284,15 +323,16 @@ export default function AddPost() {
           </div>
           <div className="flex flex-col">
             <label htmlFor="content" className="text-lg">Content</label>
-            <input
-              type="text"
-              id="content"
-              name="content"
-              value={formData.content}
-              onChange={handleChange}
-              required
-              className="border rounded-lg p-2"
+            <div>
+            <ReactQuill
+              value={editorHtml}
+              onChange={setEditorHtml}
+              modules={modules}
+              formats={formats}
+              ref={quillRef}
+              placeholder="Write your content here..."
             />
+            </div>
           </div>
           <div className="flex flex-col pt-4">
             <label htmlFor="coverimages" className="text-lg">Cover Image</label>
@@ -336,15 +376,7 @@ export default function AddPost() {
               className="border rounded-lg p-2"
             />
             {/* <Vio /> */}
-            <div>
-              <ReactQuill
-                value={editorHtml}
-                onChange={setEditorHtml}
-                modules={modules}
-                formats={formats}
-                ref={quillRef} // Use the ref here
-              />
-            </div>
+            
           </div>
           <button
             type="submit"
