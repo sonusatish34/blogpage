@@ -78,23 +78,27 @@ export default function AddPost() {
     const file = e.target.files[0];
     if (file) {
       const formData = new FormData();
-      formData.append('coverImage', file);
-  
+      formData.append('coverImage', file); // Add the file to the form data
+
       try {
+        // Send the image to the server (which is running on localhost for testing)
         const response = await axios.post('http://localhost:5000/upload', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
+
+        // The server returns the file path where the image is saved
         const { filePath } = response.data;
-  
-        // Store the file path in state (the URL of the uploaded image)
+
+        // Update the formData with the file path (which can be used to render the image)
         setFormData((prevData) => ({
           ...prevData,
-          coverimages: filePath,
+          coverimages: filePath, // Store the relative file path in state
         }));
+
         console.log(filePath, "Uploaded file path");
-  
+
       } catch (error) {
         console.error('Error uploading the image:', error);
         Swal.fire({
@@ -105,7 +109,7 @@ export default function AddPost() {
       }
     }
   };
-  
+
 
 
   const handleSubmit = async (e) => {
@@ -114,7 +118,7 @@ export default function AddPost() {
     const newPost = {
       title: formData.title,
       page: formData.Page,
-      content: editorHtml,
+      content: encryptedData,
       keywords: formData.keywords,
       coverimages: formData.coverimages,
       blogfor: formData.blogfor,
@@ -195,6 +199,13 @@ export default function AddPost() {
   const [editorHtml, setEditorHtml] = useState('');
   const quillRef = useRef(null); // Create a reference using useRef
   console.log(editorHtml, "-------eh");
+  var encryptedData = CryptoJS.AES.encrypt(editorHtml, "ldc").toString();
+  var decryptedData =
+    console.log(encryptedData, "encrpt");
+  var bytes = CryptoJS.AES.decrypt(encryptedData, "ldc");
+  var decryptedData = bytes.toString(CryptoJS.enc.Utf8);  // Convert bytes back to string
+
+  console.log("Decrypted Data: ", decryptedData);
 
   // Custom image handler
 
@@ -207,16 +218,16 @@ export default function AddPost() {
       ['link', 'image'], // Add the image button in the toolbar
       [{ 'align': [] }],
       ['clean'] // Add a clean button to clear the content
-       // Add font color and background color to the toolbar
-    [{ 'color': [] }], // Color dropdown
-    [{ 'background': [] }], // Background color dropdown
+      // Add font color and background color to the toolbar
+      [{ 'color': [] }], // Color dropdown
+      [{ 'background': [] }], // Background color dropdown
     ]
   };
 
   // Use the `formats` prop to specify the allowed formats in the editor
   const formats = [
     'header', 'font', 'size', 'list', 'bold', 'italic', 'underline', 'strike',
-    'blockquote', 'code-block', 'link', 'image', 'align','color', 'background'
+    'blockquote', 'code-block', 'link', 'image', 'align', 'color', 'background'
   ];
 
 
@@ -298,7 +309,6 @@ export default function AddPost() {
                 <img src={`http://localhost:5000${formData.coverimages}`} alt="Cover Preview" className="w-32 h-32 object-cover rounded" />
               </div>
             )}
-
           </div>
           <div className="flex flex-col pt-4">
             <label htmlFor="blogfor" className="text-lg">Blog For</label>

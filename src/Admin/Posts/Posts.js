@@ -56,7 +56,7 @@ function PostsData({ postsData, currentPage, itemsPerPage, setPostsData }) {
             <tr>
               <th className="w-1/5 py-2">Id</th>
               <th className="w-1/5 py-2">Title</th>
-              <th className="w-1/5 py-2">Description</th>
+              {/* <th className="w-1/5 py-2">Description</th> */}
               <th className="w-1/5 py-2">Blog for</th>
               <th className="w-1/5 py-2">Category</th>
               <th className="w-1/5 py-2">Created At</th>

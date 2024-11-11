@@ -88,47 +88,51 @@
 
 
 
-// Existing imports and setup
+
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const cors = require('cors');
 const fs = require('fs');
+const cors = require('cors');
+
 const app = express();
 
+// Allow CORS if needed (for cross-origin requests)
 app.use(cors());
 
-// Create an uploads folder if it doesn't exist
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
+// Set up storage location for uploaded files
+const uploadDirectory = path.join(__dirname, 'uploads');
+
+// Check if the uploads directory exists; if not, create it
+if (!fs.existsSync(uploadDirectory)) {
+  fs.mkdirSync(uploadDirectory);
 }
 
-// Set up multer storage for local file storage
+// Configure Multer to save files to the 'uploads' directory
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadDir); // Store in the uploads directory
+    cb(null, uploadDirectory); // Store in the 'uploads' folder
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname)); // Use original extension
-  }
+    cb(null, uniqueSuffix + path.extname(file.originalname)); // Preserve file extension
+  },
 });
 
 const upload = multer({ storage });
 
-// Endpoint for uploading the cover image to local disk
+// Endpoint for uploading cover image
 app.post('/upload', upload.single('coverImage'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
-
-  const filePath = `/uploads/${req.file.filename}`; // Path to the file relative to your server
-  res.status(200).json({ filePath });
+  const filePath = `/uploads/${req.file.filename}`; // Relative path to the uploaded file
+  res.status(200).json({ filePath }); // Respond with the file path
 });
 
-// Serve the uploaded images from the uploads folder
+// Serve images from the uploads folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Start server
 app.listen(5000, () => console.log('Server started on http://localhost:5000'));
+
