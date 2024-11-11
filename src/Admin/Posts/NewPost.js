@@ -66,26 +66,28 @@ export default function AddPost() {
     if (file) {
       const formData = new FormData();
       formData.append('coverImage', file); // Add the file to the form data
-  
+
       try {
         // Use the environment variable for the backend API URL
+        const apiUrl = `${process.env.REACT_APP_API_URL}/upload`;
+        console.log('API URL:', apiUrl);  // Log the full URL for debugging
         const response = await axios.post(`${process.env.REACT_APP_API_URL}/upload`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
-  
+
         // The server returns the file path where the image is saved
         const { filePath } = response.data;
-  
+
         // Update the formData with the file path (which can be used to render the image)
         setFormData((prevData) => ({
           ...prevData,
           coverimages: filePath, // Store the relative file path in state
         }));
-  
+
         console.log(filePath, "Uploaded file path");
-  
+
       } catch (error) {
         console.error('Error uploading the image:', error);
         Swal.fire({
@@ -96,18 +98,18 @@ export default function AddPost() {
       }
     }
   };
-  
-  
+
+
   const imageHandler = async () => {
     const input = document.createElement('input');
     input.setAttribute('type', 'file');
     input.setAttribute('accept', 'image/*');
-    
+
     input.click();
-  
+
     input.onchange = async () => {
       const file = input.files[0]; // Corrected the way to access the selected file
-  
+
       if (file) {
         try {
           // Call your image upload handler (it sends the file to the backend)
@@ -127,10 +129,10 @@ export default function AddPost() {
       }
     };
   };
-  
 
-  
-  
+
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -193,7 +195,7 @@ export default function AddPost() {
       // setPostsData(posts);
       // console.log(posts, "----------11111111------");
       setPostauthor(sessionStorage.getItem('AdminName'))
-      console.log(formData,"fd---000");
+      console.log(formData, "fd---000");
       // setLoading(false);
     };
 
@@ -297,7 +299,7 @@ export default function AddPost() {
               required
               className="border rounded-lg p-2"
             /> */}
-            {formData.title?.replaceAll(' ','-').toLowerCase()}
+            {formData.title?.replaceAll(' ', '-').toLowerCase()}
           </div>
           <div className="flex flex-col">
             <label htmlFor="keywords" className="text-lg">Keywords</label>
@@ -324,14 +326,14 @@ export default function AddPost() {
           <div className="flex flex-col">
             <label htmlFor="content" className="text-lg">Content</label>
             <div>
-            <ReactQuill
-              value={editorHtml}
-              onChange={setEditorHtml}
-              modules={modules}
-              formats={formats}
-              ref={quillRef}
-              placeholder="Write your content here..."
-            />
+              <ReactQuill
+                value={editorHtml}
+                onChange={setEditorHtml}
+                modules={modules}
+                formats={formats}
+                ref={quillRef}
+                placeholder="Write your content here..."
+              />
             </div>
           </div>
           <div className="flex flex-col pt-4">
@@ -376,7 +378,7 @@ export default function AddPost() {
               className="border rounded-lg p-2"
             />
             {/* <Vio /> */}
-            
+
           </div>
           <button
             type="submit"
