@@ -12,7 +12,31 @@ import axios from 'axios'; // for handling image upload
 import { fireDb } from '../../firebase';
 export default function AddPost() {
 
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState('');
 
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    setSelectedFile(file);
+    
+    // Create FormData object to send the file as multipart/form-data
+    const formData = new FormData();
+    formData.append('coverimages', file);
+    console.log(formData,"formData");
+    
+    try {
+      const response = await axios.post('http://localhost:5000/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      console.log(response,"response");
+      // Set the uploaded image URL from the response
+      setUploadedImageUrl(response.data.fileUrl);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+    }
+  };
   const [postauthor, setPostauthor] = useState('')
   const [formData, setFormData] = useState({
     id: '',
@@ -28,7 +52,13 @@ export default function AddPost() {
   const [editorData, setEditorData] = useState('');
   const [selectedCat, setSelectedCat] = useState('');
   const [currentKeyword, setCurrentKeyword] = useState(''); // Temporary state for current keyword
-
+//   const replaceText = (str) => {
+//     if (str?.includes("cdn"))
+//         return str;
+//     else {
+//         return str?.replace('https://ldcars.blr1.', 'https://ldcars.blr1.cdn.');
+//     }
+// };
   // Handle form changes
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -60,73 +90,6 @@ export default function AddPost() {
   };
 
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const formData = new FormData();
-      formData.append('coverImage', file); // Add file to formData
-  
-      try {
-        const response = await axios.post('/api/upload', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data', // Correct content type for file uploads
-          },
-        });
-  
-        if (response.data.filePath) {
-          setFormData((prevData) => ({
-            ...prevData,
-            coverimages: response.data.filePath, // Set the file path from the response
-          }));
-          console.log("File uploaded successfully:", response.data.filePath);
-        } else {
-          console.error('Error uploading file:', response.data.error);
-        }
-      } catch (error) {
-        console.error('Error uploading image:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Upload Error',
-          text: 'There was an error uploading the image. Please try again.',
-        });
-      }
-    }
-  };
-  
-  
-
-
-  const imageHandler = async () => {
-    const input = document.createElement('input');
-    input.setAttribute('type', 'file');
-    input.setAttribute('accept', 'image/*');
-
-    input.click();
-
-    input.onchange = async () => {
-      const file = input.files[0]; // Corrected the way to access the selected file
-
-      if (file) {
-        try {
-          // Call your image upload handler (it sends the file to the backend)
-          const filePath = await handleImageUpload(file);
-          if (filePath) {
-            // Get the cursor position from the Quill editor
-            const range = quillRef.current.getEditor().getSelection();
-            if (range) {
-              // Insert the image into the editor at the cursor's position
-              quillRef.current.getEditor().insertEmbed(range.index, 'image', `http://localhost:5000${filePath}`);
-              console.log("Image successfully inserted into the editor!");
-            }
-          }
-        } catch (error) {
-          console.error("Image upload failed:", error);
-        }
-      }
-    };
-  };
-
-
 
 
   const handleSubmit = async (e) => {
@@ -137,7 +100,7 @@ export default function AddPost() {
       page: formData.Page,
       content: editorHtml,
       keywords: formData.keywords,
-      coverimages: formData.coverimages,
+      coverimages: uploadedImageUrl,
       blogfor: formData.blogfor,
       categoryname: formData.categoryname,
       createdAt: new Date().toISOString(),
@@ -216,34 +179,16 @@ export default function AddPost() {
   const [editorHtml, setEditorHtml] = useState('');
   const quillRef = useRef(null); // Create a reference using useRef
   console.log(editorHtml, "-------eh");
-  var encryptedData = CryptoJS.AES.encrypt(editorHtml, "ldc").toString();
-  var decryptedData =
-    console.log(encryptedData, "encrpt");
-  var bytes = CryptoJS.AES.decrypt(encryptedData, "ldc");
-  var decryptedData = bytes.toString(CryptoJS.enc.Utf8);  // Convert bytes back to string
+  // var encryptedData = CryptoJS.AES.encrypt(editorHtml, "ldc").toString();
+  // var decryptedData =
+  //   console.log(encryptedData, "encrpt");
+  // var bytes = CryptoJS.AES.decrypt(encryptedData, "ldc");
+  // var decryptedData = bytes.toString(CryptoJS.enc.Utf8);  // Convert bytes back to string
 
-  console.log("Decrypted Data: ", decryptedData);
+  // console.log("Decrypted Data: ", decryptedData);
 
   // Custom image handler
-  useEffect(() => {
-    if (quillRef.current) {
-      const quillEditor = quillRef.current.getEditor();
-      const toolbar = quillEditor.getModule('toolbar');
 
-      // Manually add the custom image handler
-      const imageButton = toolbar.container.querySelector('.ql-image');
-      if (imageButton) {
-        imageButton.addEventListener('click', imageHandler);
-      }
-
-      // Cleanup the event listener when the component unmounts
-      return () => {
-        if (imageButton) {
-          imageButton.removeEventListener('click', imageHandler);
-        }
-      };
-    }
-  }, []);
   const modules = {
     toolbar: [
       [{ 'header': '1' }, { 'header': '2' }, { 'font': [] }, { 'size': ['small', 'normal', 'large', 'huge'] }], // Adding custom font sizes
@@ -266,6 +211,52 @@ export default function AddPost() {
     'blockquote', 'code-block', 'link', 'image', 'align', 'color', 'background'
   ];
 
+
+  
+  useEffect(() => {
+    // @ts-ignore
+    quillRef.current
+      .getEditor()
+      .getModule('toolbar')
+      .addHandler('quillImage', () => {
+        const input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/*');
+        input.click();
+
+        input.onchange = async () => {
+          if (!input.files || !input.files.length || !input.files[0]) return;
+
+          const file = input.files[0];
+
+          // Create FormData to send the image to the server
+          const formData = new FormData();
+          formData.append('quillImage', file);
+          console.log(formData,"formdsata in funcncn");
+          
+          // Send image file to backend (Node.js server)
+          try {
+            const response = await fetch('http://localhost:5000/uploadei', {
+              method: 'POST',
+              body: formData,
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+              // Insert the image URL into Quill editor
+              const editor = quillRef.current.getEditor();
+              const range = editor.getSelection(true);
+              editor.insertEmbed(range.index, 'image', data.imageUrl);
+            } else {
+              console.error('Upload failed:', data.error);
+            }
+          } catch (error) {
+            console.error('Error uploading image:', error);
+          }
+        };
+      });
+  }, []);
 
   return (
     <AdminLayout>
@@ -343,7 +334,7 @@ export default function AddPost() {
               className="border rounded-lg p-2"
             />
             <img
-              src={`https://your-backend-url.com${formData.coverimages}`}  // Adjust URL for public access
+              src={`${uploadedImageUrl?.replace('https://ldcars.blr1.', 'https://ldcars.blr1.cdn.')}`}  // Adjust URL for public access
               alt="Cover Preview"
               className="w-32 h-32 object-cover rounded"
             />
@@ -373,8 +364,6 @@ export default function AddPost() {
               required
               className="border rounded-lg p-2"
             />
-            {/* <Vio /> */}
-
           </div>
           <button
             type="submit"

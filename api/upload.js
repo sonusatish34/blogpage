@@ -1,36 +1,49 @@
-// api/upload.js
-import multer from 'multer';
-import path from 'path';
-import { IncomingForm } from 'formidable';
+const AWS = require('aws-sdk');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
-// Temporary file storage (in-memory storage for serverless functions)
-const storage = multer.memoryStorage();
-const upload = multer({ storage }).single('coverImage');
+const s3 = new AWS.S3({
+  endpoint: new AWS.Endpoint('https://blr1.digitaloceanspaces.com'),
+  accessKeyId: 'DO00EMW9VPKGYFANMCYQ',  // Your DigitalOcean Spaces Access Key ID
+  secretAccessKey: 'y+1iUnpYYwGZM0mq4O+vQEEWaNffAkKLKNQY9Y48IXQ',  // Your DigitalOcean Spaces Secret Access Key
+  region: 'blr1',  // Your DigitalOcean Space region
+});
 
-// Handle the upload logic
-export default function handler(req, res) {
-  if (req.method === 'POST') {
-    const form = new IncomingForm();
+const uploadImageHandler = async (req, res) => {
+  try {
+    const { file } = req;
+    if (!file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
+    }
 
-    form.parse(req, (err, fields, files) => {
+    // Generate a unique file name
+    const fileName = `${Date.now()}_${file.originalname}`;
+
+    // Define upload parameters
+    const params = {
+      Bucket: 'ldcars',  // Your DigitalOcean Space name
+      Key: `ldcars_nextjs_images/blog_images/${fileName}`,  // Path where the file will be stored
+      Body: file.buffer,  // File content from memory
+      ContentType: file.mimetype,  // MIME type of the uploaded file
+      ACL: 'public-read',  // Make the file publicly accessible
+    };
+
+    // Upload the file to DigitalOcean Spaces
+    s3.upload(params, (err, data) => {
       if (err) {
-        return res.status(500).json({ error: 'Error in file upload.' });
+        return res.status(500).json({ success: false, error: 'Error uploading file' });
       }
 
-      // Use your file handling logic here (e.g., save to cloud storage like AWS S3 or Vercel's temporary file system)
-      const file = files.coverImage[0];
-      
-      if (file) {
-        const fileName = `${Date.now()}-${file.originalFilename}`;
-        
-        // You can use AWS S3, Cloudinary, or any other service here for persistent storage
-        // For now, just simulate a response with the file path
-        res.status(200).json({ filePath: `/uploads/${fileName}` });
-      } else {
-        res.status(400).json({ error: 'No file uploaded' });
-      }
+      // Return the URL of the uploaded image
+      return res.json({
+        success: true,
+        imageUrl: data.Location?.replace('https://ldcars.blr1.', 'https://ldcars.blr1.cdn.'),  // Publicly accessible URL
+      });
     });
-  } else {
-    res.status(405).json({ error: 'Method Not Allowed' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
-}
+};
+
+module.exports = uploadImageHandler;
