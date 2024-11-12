@@ -151,7 +151,7 @@ function App() {
         
         {/* Protected Routes */}
         <Route path="/" element={isAuthenticated ? <Dashboard /> : <Navigate to="/Login" />} />
-        <Route path="/Admin" element={isAuthenticated ? <Dashboard /> : <Navigate to="/Login" />} />
+        <Route path="/Admin" element={ <Dashboard />} />
         <Route path="/Admin/Dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/Login" />} />
         <Route path="/Admin/Posts" element={isAuthenticated ? <Posts /> : <Navigate to="/Login" />} />
         <Route path="/Admin/Post/New" element={isAuthenticated ? <Add /> : <Navigate to="/Login" />} />

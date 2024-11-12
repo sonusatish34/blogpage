@@ -1,46 +1,38 @@
-import fs from 'fs';
-import path from 'path';
-import formidable from 'formidable'; // Import formidable for handling file uploads
+const AWS = require('aws-sdk');
+const fs = require('fs');
+const path = require('path');
 
-// Set up the temporary directory path for Vercel's /tmp folder
-const TEMP_DIR = '/tmp';
+// Initialize the S3 client for DigitalOcean Spaces
+const s3 = new AWS.S3({
+  endpoint: new AWS.Endpoint('https://blr1.digitaloceanspaces.com'),  // Use just the region endpoint
+  accessKeyId: 'DO00EMW9VPKGYFANMCYQ',  // Replace with your DigitalOcean Spaces Access Key ID
+  secretAccessKey: 'y+1iUnpYYwGZM0mq4O+vQEEWaNffAkKLKNQY9Y48IXQ',  // Replace with your DigitalOcean Spaces Secret Access Key
+  region: 'blr1'  // Replace with your DigitalOcean Space region, e.g., nyc3, sgp1, etc.
+});
 
-export const config = {
-  api: {
-    bodyParser: false, // Disable Vercel's built-in body parser to handle multipart/form-data
-  },
+// Upload file to DigitalOcean Space
+const uploadFileToSpace = (filePath) => {
+  const fileContent = fs.readFileSync(filePath);
+  const fileName = path.basename(filePath);
+
+  const params = {
+    Bucket: 'ldcars',  // Correct Space name
+    Key: `ldcars_nextjs_images/blog_images/${fileName}`,  // Save in '_nextjs_images/blog_images' folder
+    Body: fileContent,
+    ContentType: 'image/jpeg',  // Replace with the appropriate MIME type of the file
+    ACL: 'public-read'  // You can change this depending on whether you want the file to be publicly accessible
+  };
+
+  // Upload file to DigitalOcean Space
+  s3.upload(params, (err, data) => {
+    if (err) {
+        console.log('Error uploading file:', err);
+    } else {
+      console.log('File uploaded successfully:', data.Location);  // Get the URL of the uploaded file
+    }
+  });
 };
 
-export default function handler(req, res) {
-  if (req.method === 'POST') {
-    // Create a new formidable instance to handle the incoming file data
-    const form = new formidable.IncomingForm();
-
-    // Set the upload directory to Vercel's /tmp folder
-    form.uploadDir = TEMP_DIR;
-    form.keepExtensions = true; // Keep the original file extension
-    form.parse(req, (err, fields, files) => {
-      if (err) {
-        console.error("Error parsing form data:", err); // Log the error for debugging
-        return res.status(500).json({ error: 'Error in file upload.' });
-      }
-
-      // Check if the file exists in the 'coverImage' field
-      const file = files.coverImage;
-      if (file) {
-        const filePath = path.join(TEMP_DIR, file.newFilename); // Temporary file path
-        console.log('Uploaded file path:', filePath); // Log for debugging
-        
-        // Send back the file path or URL as needed
-        return res.status(200).json({
-          filePath: `/api/uploads/${file.newFilename}`, // This could be used for accessing the file
-        });
-      } else {
-        return res.status(400).json({ error: 'No file uploaded' });
-      }
-    });
-  } else {
-    // Return an error if the method is not POST
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
-}
+// Run the upload function with the path to your image
+const filePath = './public/logo192.png';  // Replace with the path to your local image
+uploadFileToSpace(filePath);
