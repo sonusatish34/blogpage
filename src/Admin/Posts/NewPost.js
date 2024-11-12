@@ -260,7 +260,7 @@ export default function AddPost() {
           // Create FormData to send the image to the server
           const formData = new FormData();
           formData.append('image', file);
-          console.log(formData,"formdsata in funcncn");
+          console.log(formData,"formdsata in funcn");
           
           // Send image file to backend (Node.js server)
           try {
