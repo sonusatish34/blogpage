@@ -25,7 +25,7 @@ export default function AddPost() {
     console.log(formData,"formData");
     
     try {
-      const response = await axios.post('https://blogpage-theta.vercel.app/api/uploadei', formData, {
+      const response = await axios.post('https://blogpage-theta.vercel.app/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
