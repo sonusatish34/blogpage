@@ -2,37 +2,58 @@ import React, { useState, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2';
 import CryptoJS from 'crypto-js';
 import AdminLayout from '../../layouts/AdminLayout';
-import { Timestamp, addDoc, collection, setDoc, getDocs } from 'firebase/firestore';
+import { Timestamp, addDoc, collection, setDoc, getDocs, query, where, } from 'firebase/firestore';
 // import Vio from "./Admin/Vio/TextEditor"
 import Vio from "../../Admin/Vio/TextEditor"
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css'; // import styles
 import axios from 'axios'; // for handling image upload
-
 import { fireDb } from '../../firebase';
+
 export default function AddPost() {
+  const [catgs, setCatgs] = useState('');
+  useEffect(() => {
+    const fetchCatgs = async () => {
+      // setLoading(true);
+      const querySnapshot = await getDocs(collection(fireDb, "categories"));
+      const catgs1 = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // setPostsData(posts);
+      setCatgs(catgs1)
+      console.log(catgs1, "----------11111111------");
+      setPostauthor(localStorage.getItem('AdminName'))
+      // console.log(formData, "fd---000");
+      // setLoading(false);
+    };
+    fetchCatgs()
+  }, [])
+  // console.log(catgs, "--catgs--");
 
   const [selectedFile, setSelectedFile] = useState(null);
+
   const [uploadedImageUrl, setUploadedImageUrl] = useState('');
 
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
     setSelectedFile(file);
-    
+
     // Create FormData object to send the file as multipart/form-data
     const formData = new FormData();
     formData.append('coverimages', file);
-    console.log(formData,"formData");
-    
+    // console.log(formData, "formData");
+
+    // console.log(formData, "------------fdd---");
     try {
-      const response = await axios.post('https://blogpage-theta.vercel.app/api/upload', formData, {
+            const response = await axios.post('https://blogpage-theta.vercel.app/api/upload', formData, {
+
+      // const response = await axios.post('http://localhost:5000/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      console.log(response,"response");
+      console.log(response, "response");
+      const convimg = response?.data?.fileUrl.replace('https://ldcars.blr1.', 'https://ldcars.blr1.cdn.')
       // Set the uploaded image URL from the response
-      setUploadedImageUrl(response.data.fileUrl);
+      setUploadedImageUrl(convimg);
     } catch (error) {
       console.error('Error uploading image:', error);
     }
@@ -41,71 +62,117 @@ export default function AddPost() {
   const [formData, setFormData] = useState({
     id: '',
     title: '',
-    Page: '',
+    description: '',
     content: '',
-    keywords: '',  // This will store keywords as a comma-separated string
     coverimages: '',  // This will store the base64 image string
     blogfor: '',
-    categoryname: ''
+    categoryname: '',
+    description: '',
+    slug: ''
   });
+  // console.log(formData, '000000000');
 
   const [editorData, setEditorData] = useState('');
+
+
   const [selectedCat, setSelectedCat] = useState('');
+
+  useEffect(() => {
+    async function hu() {
+      const categoryRef = collection(fireDb, 'categories');
+      const q = query(categoryRef, where('name', '==', 'dss'));
+      const querySnapshot = await getDocs(q);
+      // return querySnapshot.empty;
+      console.log(querySnapshot.empty, "test ing cat");
+    }
+    hu()
+  }, [])
+  async function handleCategory() {
+
+    async function hu(catname) {
+      const categoryRef = collection(fireDb, 'categories');
+      const q = query(categoryRef, where('name', '==', catname));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.empty;
+      console.log(querySnapshot.empty,"test ing cat");
+
+    }
+    const categoryExists = await hu(selectedCat);
+
+    if (!categoryExists) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Category Exists',
+        text: 'This category already exists in the database.',
+      });
+      return false; // Do not proceed to post submission
+    }
+
+    else {
+      try {
+        // Add new category to Firestore if it doesn't exist
+        await addDoc(collection(fireDb, 'categories'), {
+          name: selectedCat,
+          createdAt: Timestamp.now(),
+        });
+        console.log('Category added successfully!');
+        return true; // Proceed with post creation
+      } catch (error) {
+        console.error('Error adding category:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'There was an error adding the category.',
+        });
+        return false;
+      }
+    }
+
+  }
+
   const [currentKeyword, setCurrentKeyword] = useState(''); // Temporary state for current keyword
-//   const replaceText = (str) => {
-//     if (str?.includes("cdn"))
-//         return str;
-//     else {
-//         return str?.replace('https://ldcars.blr1.', 'https://ldcars.blr1.cdn.');
-//     }
-// };
+
   // Handle form changes
   const handleChange = (e) => {
+    console.log("Selected Value:", e.target.value);
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [name]: value
+    }));
+    
   };
-
-  // Handle keyword input change 
-  const handleKeywordChange = (e) => {
-    setCurrentKeyword(e.target.value);
-  };
-
-  // Handle adding keyword to the list (on Enter key press)
-  const handleKeywordKeyDown = (e) => {
-    if (e.key === 'Enter' && currentKeyword.trim()) {
-      // Add currentKeyword to the list of keywords
-      const updatedKeywords = formData.keywords
-        ? `${formData.keywords},${currentKeyword.trim()}`
-        : currentKeyword.trim();
-
-      // Update formData with the new keywords string
-      setFormData((prevData) => ({
-        ...prevData,
-        keywords: updatedKeywords,
-      }));
-
-      // Clear the input after adding the keyword
-      // setCurrentKeyword('');
-    }
-  };
-
-
+  console.log(formData,"formadastat on handle change ");
 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    handleCategory();
+    // const categoryAdded = await addCategoryIfNotExists(selectedCat);
+    // if (!categoryAdded) {
+    //   return; // Exit early if category was not added or already exists
+    // }
     const newPost = {
       title: formData.title,
-      page: formData.Page,
+      // page: formData.Page,
+      description:formData.description,
+      slug:formData.slug,
       content: editorHtml,
-      keywords: formData.keywords,
       coverimages: uploadedImageUrl,
       blogfor: formData.blogfor,
       categoryname: formData.categoryname,
       createdAt: new Date().toISOString(),
     };
-
+// id: '',
+//       title: '',
+//       description: '',
+//       content: '',
+//       coverimages: '',  // This will store the base64 image string
+//       blogfor: '',
+//       categoryname: '',
+//       description: '',
+//       slug: ''
     try {
       // Save post in Firestore under blogdb -> blogs collection
       const blogRef = collection(fireDb, "blogPost"); // Reference to blogs collection under blogdb
@@ -123,19 +190,23 @@ export default function AddPost() {
       Swal.fire({
         icon: 'success',
         title: 'Post Created',
-        html: `Title: ${formData.title}<br>Page: ${formData.Page}<br>Content: ${"editorData"}<br>Tags: ${formData.tags}<br>Keywords: ${formData.keywords}`,
+        html: `Title: ${formData.title}<br>Page: ${formData.Page}<br>Content: ${"editorData"}<br>Tags: ${formData.tags}`,
       });
 
       // Clear the form
       setFormData({
+        id: '',
         title: '',
-        Page: '',
+        description: '',
         content: '',
-        keywords: '',
-        coverimages: '',
+        coverimages: '',  // This will store the base64 image string
         blogfor: '',
         categoryname: '',
+        description: '',
+        slug: ''
       });
+      setEditorHtml('')
+      
       // setEditorData('');
     } catch (error) {
       Swal.fire({
@@ -146,49 +217,43 @@ export default function AddPost() {
     }
   };
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      // setLoading(true);
-      const querySnapshot = await getDocs(collection(fireDb, "blogPost"));
-      const posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      // setPostsData(posts);
-      // console.log(posts, "----------11111111------");
-      setPostauthor(sessionStorage.getItem('AdminName'))
-      console.log(formData, "fd---000");
-      // setLoading(false);
-    };
+  // useEffect(() => {
+  //   const fetchPosts = async () => {
+  //     // setLoading(true);
+  //     const querySnapshot = await getDocs(collection(fireDb, "blogPost"));
+  //     const posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  //     // setPostsData(posts);
+  //     // console.log(posts, "----------11111111------");
+  //     setPostauthor(sessionStorage.getItem('AdminName'))
+  //     console.log(formData, "fd---000");
+  //     // setLoading(false);
+  //   };
 
-    fetchPosts();
-  }, []);
+  //   fetchPosts();
+  // }, []);
 
   // Handle form clear
   const handleClear = () => {
     setFormData({
+      id: '',
       title: '',
-      Page: '',
+      description: '',
       content: '',
-      keywords: '',
-      tags: '',
-      coverimages: '',
+      coverimages: '',  // This will store the base64 image string
       blogfor: '',
       categoryname: '',
+      description: '',
+      slug: ''
     });
     setEditorData('');  // Reset the CKEditor content
   };
 
   const [editorHtml, setEditorHtml] = useState('');
   const quillRef = useRef(null); // Create a reference using useRef
-  console.log(editorHtml, "-------eh");
-  // var encryptedData = CryptoJS.AES.encrypt(editorHtml, "ldc").toString();
-  // var decryptedData =
-  //   console.log(encryptedData, "encrpt");
-  // var bytes = CryptoJS.AES.decrypt(encryptedData, "ldc");
-  // var decryptedData = bytes.toString(CryptoJS.enc.Utf8);  // Convert bytes back to string
+  // console.log(editorHtml, "-------");
 
-  // console.log("Decrypted Data: ", decryptedData);
-
-  // Custom image handler
-
+  console.log(editorHtml,"ediur html");
+  
   const modules = {
     toolbar: [
       [{ 'header': '1' }, { 'header': '2' }, { 'font': [] }, { 'size': ['small', 'normal', 'large', 'huge'] }], // Adding custom font sizes
@@ -212,35 +277,7 @@ export default function AddPost() {
   ];
 
 
-  // useEffect(() => {
-  //   // @ts-ignore
-  //   quillRef.current
-  //     .getEditor()
-  //     .getModule('toolbar')
-  //     .addHandler('image', () => {
-  //       const input = document.createElement('input')
-  //       input.setAttribute('type', 'file')
-  //       input.setAttribute('accept', 'image/*')
-  //       input.click()
-  //       input.onchange = async () => {
-  //         if (!input.files || !input?.files?.length || !input?.files?.[0])
-  //           return
-  //         // @ts-ignore
-  //         const editor = quillRef?.current?.getEditor()
-  //         const file = input.files[0]
-  //         console.log(file,"fleesss");
-          
-  //          // Do what you want with the file 
 
-  //         const range = editor.getSelection(true)
-  //         editor.insertEmbed(
-  //           range.index,
-  //           'image',
-  //           '<image-url>'
-  //         )
-  //       }
-  //     })
-  // }, [quillRef])
   useEffect(() => {
     // @ts-ignore
     quillRef.current
@@ -256,14 +293,16 @@ export default function AddPost() {
           if (!input.files || !input.files.length || !input.files[0]) return;
 
           const file = input.files[0];
-
+          const altText = prompt("Please enter alt text for the image:");
+          // if (altText) setImageAltText(altText); // Store alt text
           // Create FormData to send the image to the server
           const formData = new FormData();
           formData.append('image', file);
-          console.log(formData,"formdsata in funcn");
-          
+          console.log(formData, "formdsata in funcncn");
+
           // Send image file to backend (Node.js server)
           try {
+            // const response = await axios.post('https://blogpage-theta.vercel.app/api/upload', formData, {
             const response = await fetch('https://blogpage-theta.vercel.app/api/uploadei', {
               method: 'POST',
               body: formData,
@@ -276,6 +315,12 @@ export default function AddPost() {
               const editor = quillRef.current.getEditor();
               const range = editor.getSelection(true);
               editor.insertEmbed(range.index, 'image', data.imageUrl);
+
+              const imageElement = editor.container.querySelector('img');
+              if (imageElement) {
+                imageElement.setAttribute('alt', altText);
+              }
+
             } else {
               console.error('Upload failed:', data.error);
             }
@@ -305,38 +350,32 @@ export default function AddPost() {
           </div>
           <div className="flex flex-col">
             <label htmlFor="Page" className="text-lg">Page URL</label>
-            {/* <input
-              type="text"
-              id="Page"
-              name="Page"
-              value={formData.Page}
-              onChange={handleChange}
-              required
-              className="border rounded-lg p-2"
-            /> */}
+
             {formData.title?.replaceAll(' ', '-').toLowerCase()}
           </div>
           <div className="flex flex-col">
-            <label htmlFor="keywords" className="text-lg">Keywords</label>
+            <label htmlFor="description" className="text-lg"> Meta Description</label>
             <input
               type="text"
-              id="keywords"
-              name="keywords"
-              value={currentKeyword}  // Bind to the temporary state
-              onChange={handleKeywordChange}
-              onKeyDown={handleKeywordKeyDown}  // Add the enter key press handler
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
               required
               className="border rounded-lg p-2"
-              placeholder="Press enter to add keywords"
             />
-            <div className="mt-2">
-              <strong>Keywords: </strong>
-              {formData.keywords.split(',').map((keyword, index) => (
-                <span key={index} className="badge bg-indigo-200 text-indigo-800 rounded px-2 py-1 mr-2">
-                  {keyword}
-                </span>
-              ))}
-            </div>
+          </div>
+          <div className="flex flex-col">
+            <label htmlFor="slug" className="text-lg">slug</label>
+            <input
+              type="text"
+              id="slug"
+              name="slug"
+              value={formData.slug}
+              onChange={handleChange}
+              placeholder='optional'
+              className="border rounded-lg p-2"
+            />
           </div>
           <div className="flex flex-col">
             <label htmlFor="content" className="text-lg">Content</label>
@@ -362,7 +401,7 @@ export default function AddPost() {
               className="border rounded-lg p-2"
             />
             <img
-              src={`${uploadedImageUrl?.replace('https://ldcars.blr1.', 'https://ldcars.blr1.cdn.')}`}  // Adjust URL for public access
+              src={`${uploadedImageUrl}`}  // Adjust URL for public access
               alt="Cover Preview"
               className="w-32 h-32 object-cover rounded"
             />
@@ -392,6 +431,19 @@ export default function AddPost() {
               required
               className="border rounded-lg p-2"
             />
+          </div>
+          <div>
+            {/* {catgs?.map((item, index) => (
+              <p>{item.name}</p>
+            ))} */}
+            <p>Existing Categories</p>
+            <div className='flex gap-3'>
+              {catgs?.length ? catgs?.map((item, index) => (
+                <p key={index}>{item.name}</p> // use `item.id` as the key
+              )) : ''}
+            </div>
+
+            {/* <p>jikop</p> */}
           </div>
           <button
             type="submit"

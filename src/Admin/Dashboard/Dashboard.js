@@ -9,8 +9,10 @@ import { CategoryScale } from "chart.js";
 import Chart from 'chart.js/auto';
 import Loading from '../../layouts/Loading';
 import axios from 'axios';
-
+import { fireDb } from '../../firebase';
 /* AnalyticsCard component */
+import { Timestamp, addDoc, collection, setDoc, getDocs, query, where, } from 'firebase/firestore';
+
 function AnalyticsCard({ title, value, icon }) {
   return (
     <div className="bg-white rounded-lg shadow-md p-4 flex items-center space-x-4">
@@ -25,6 +27,35 @@ function AnalyticsCard({ title, value, icon }) {
 
 /* Dashboard component */
 function Dashboard() {
+  const [postcount,setPostcount] = useState('');
+  const [catgscount,setCatgscount] = useState('');
+    useEffect(() => {
+    const fetchPosts = async () => {
+      // setLoading(true);
+      const querySnapshot = await getDocs(collection(fireDb, "blogPost"));
+      const posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // setPostsData(posts);
+      setPostcount(posts?.length)
+      console.log(posts.length, "----------11111111------");
+      // setPostauthor(sessionStorage.getItem('AdminName'))
+      // console.log(formData, "fd---000");
+      // setLoading(false);
+    };
+    const fetchCatgs = async () => {
+      // setLoading(true);
+      const querySnapshot = await getDocs(collection(fireDb, "categories"));
+      const catgs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // setPostsData(posts);
+      setCatgscount(catgs?.length)
+      // console.log(catgs, "----------11111111------");
+      // setPostauthor(sessionStorage.getItem('AdminName'))
+      // console.log(formData, "fd---000");
+      // setLoading(false);
+    };
+
+    fetchPosts();
+    fetchCatgs();
+  }, []);
   const [isLoading, setLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState({
     TotalPosts: 0,
@@ -59,11 +90,11 @@ function Dashboard() {
   const dashboardContent = isLoading ? (
     <div className="container mx-auto mt-8 px-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <AnalyticsCard title="Total Posts" value={dashboardData.TotalPosts} icon={faFileAlt} />
-        <AnalyticsCard title="Total Comments" value={dashboardData.TotalComment} icon={faComments} />
-        <AnalyticsCard title="Likes Received" value={dashboardData.TotalLikes} icon={faHeart} />
-        <AnalyticsCard title="Total Visits" value={dashboardData.TotalVisits} icon={faEye} />
-        <AnalyticsCard title="Total Categories" value={dashboardData.TotalCategories} icon={faFolder} />
+        <AnalyticsCard title="Total Posts" value={postcount} icon={faFileAlt} />
+        {/* <AnalyticsCard title="Total Comments" value={dashboardData.TotalComment} icon={faComments} /> */}
+        {/* <AnalyticsCard title="Likes Received" value={dashboardData.TotalLikes} icon={faHeart} /> */}
+        {/* <AnalyticsCard title="Total Visits" value={dashboardData.TotalVisits} icon={faEye} /> */}
+        <AnalyticsCard title="Total Categories" value={catgscount} icon={faFolder} />
         <AnalyticsCard title="Total Users" value={dashboardData.TotalUsers} icon={faUser} />
         {/* <AnalyticsCard title="Active Users" value={dashboardData.ActifUsers} icon={faUserCheck} /> */}
       </div>

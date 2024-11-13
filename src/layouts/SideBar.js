@@ -8,11 +8,12 @@ function SideBar() {
 
   const links = [
     { to: "/Admin/Dashboard", icon: faHome, label: "Dashboard" },
-    { to: "/Admin/Posts", icon: faFileAlt, label: "Posts" },
-    { to: "/Admin/Categories", icon: faFolder, label: "Categories" },
-    { to: "/Admin/Inbox", icon: faInbox, label: "Inbox" },
     { to: "/Admin/Accounts", icon: faUser, label: "Accounts" },
-    { to: "/Admin/Settings", icon: faCog, label: "Settings" },
+    { to: "/Admin/Post/New", icon: faFileAlt, label: "Create Post" },
+    { to: "/Admin/Posts", icon: faFileAlt, label: "All Posts" },
+    // { to: "/Admin/Categories", icon: faFolder, label: "Categories" },
+    // { to: "/Admin/Inbox", icon: faInbox, label: "Inbox" },
+    // { to: "/Admin/Settings", icon: faCog, label: "Settings" },
     { to: "/Logout", icon: faSignOutAlt, label: "Logout" },
   ];
 

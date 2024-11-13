@@ -102,7 +102,7 @@ function Posts() {
   const [postsData, setPostsData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [selectedSort, setSelectedSort] = useState("default");
+  const [selectedSort, setSelectedSort] = useState("newest");
 
   useEffect(() => {
     const fetchPosts = async () => {

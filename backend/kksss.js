@@ -1,56 +1,131 @@
-const express = require('express');
-const AWS = require('aws-sdk');
-const multer = require('multer');
-const cors = require('cors');
-app.use(cors());
+import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 
-// Initialize the S3 client for DigitalOcean Spaces
-const s3 = new AWS.S3({
-  endpoint: new AWS.Endpoint('https://blr1.digitaloceanspaces.com'),
-  accessKeyId: 'DO00EMW9VPKGYFANMCYQ',  // Replace with your DigitalOcean Spaces Access Key ID
-  secretAccessKey: 'y+1iUnpYYwGZM0mq4O+vQEEWaNffAkKLKNQY9Y48IXQ',  // Replace with your Secret Access Key
-  region: 'blr1',  // Replace with your DigitalOcean Space region
-});
+// Create a function to check if the category exists
+const checkCategoryExists = async (categoryName) => {
+  const categoryRef = collection(fireDb, 'categories');
+  const q = query(categoryRef, where('name', '==', categoryName));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.empty; // If empty, category does not exist
+};
 
-// Initialize Express
-const app = express();
-const port = 5000;
+// Create a function to add a category if it doesn't exist
+const addCategoryIfNotExists = async (categoryName) => {
+  const categoryExists = await checkCategoryExists(categoryName);
+  
+  if (categoryExists) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Category Exists',
+      text: 'This category already exists in the database.',
+    });
+    return false; // Do not proceed to post submission
+  } else {
+    try {
+      // Add new category to Firestore if it doesn't exist
+      await addDoc(collection(fireDb, 'categories'), {
+        name: categoryName,
+        createdAt: Timestamp.now(),
+      });
+      console.log('Category added successfully!');
+      return true; // Proceed with post creation
+    } catch (error) {
+      console.error('Error adding category:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'There was an error adding the category.',
+      });
+      return false;
+    }
+  }
+};
 
-// Enable CORS to allow requests from your React app
 
-// Setup Multer for handling file uploads
-const storage = multer.memoryStorage();  // Store files in memory temporarily
-const upload = multer({ storage });
 
-// Endpoint to handle file uploads
-app.post('/upload', upload.single('coverimages'), (req, res) => {
-  const file = req.file;
-  if (!file) {
-    return res.status(400).send('No file uploaded');
+
+
+
+// --------------
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  // Check if category exists and add it if necessary
+  const categoryAdded = await addCategoryIfNotExists(formData.categoryname);
+  if (!categoryAdded) {
+    return; // Exit early if category was not added or already exists
   }
 
-  const params = {
-    Bucket: 'ldcars',  // Your DigitalOcean Space name
-    Key: `ldcars_nextjs_images/blog_images/${file.originalname}`,  // Adjust the folder structure if needed
-    Body: file.buffer,  // Upload the file buffer
-    ContentType: file.mimetype,  // Automatically detects the MIME type
-    ACL: 'public-read',  // Make the file public
+  const newPost = {
+    title: formData.title,
+    page: formData.Page,
+    content: editorHtml,
+    keywords: formData.keywords,
+    coverimages: uploadedImageUrl,
+    blogfor: formData.blogfor,
+    categoryname: formData.categoryname,
+    createdAt: new Date().toISOString(),
   };
 
-  // Upload the file to DigitalOcean Spaces
-  s3.upload(params, (err, data) => {
-    if (err) {
-      return res.status(500).send('Error uploading file: ' + err);
-    }
-    // Send the file URL as a response
-    res.status(200).send({ fileUrl: data.Location });
-  });
-});
+  try {
+    // Save post in Firestore under blogdb -> blogs collection
+    const blogRef = collection(fireDb, 'blogPost'); // Reference to blogs collection under blogdb
+    await addDoc(blogRef, {
+      ...newPost,
+      time: Timestamp.now(),
+      postauthor: postauthor,
+      date: new Date().toLocaleString('en-US', {
+        month: 'short',
+        day: '2-digit',
+        year: 'numeric',
+      }),
+    });
 
-// Start the server
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
-});
+    Swal.fire({
+      icon: 'success',
+      title: 'Post Created',
+      html: `Title: ${formData.title}<br>Page: ${formData.Page}<br>Content: ${editorHtml}<br>Tags: ${formData.tags}<br>Keywords: ${formData.keywords}`,
+    });
+
+    // Clear the form
+    setFormData({
+      title: '',
+      Page: '',
+      content: '',
+      keywords: '',
+      coverimages: '',
+      blogfor: '',
+      categoryname: '',
+    });
+    // setEditorData('');
+  } catch (error) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'There was an issue creating the post. Please try again.',
+    });
+  }
+};
 
 
 
+// Update the selectedCat state with the category name
+const handleCategory = (e) => {
+  setSelectedCat(e.target.value); // Update category name input value
+  setFormData((prevData) => ({ ...prevData, categoryname: e.target.value }));
+};
+
+
+
+<div className="flex flex-col pt-4">
+  <label htmlFor="categoryname" className="text-lg">Category Name</label>
+  <input
+    type="text"
+    id="categoryname"
+    name="categoryname"
+    value={selectedCat}
+    onChange={handleCategory}  // This should update the selectedCat state
+    required
+    className="border rounded-lg p-2"
+  />
+</div>
