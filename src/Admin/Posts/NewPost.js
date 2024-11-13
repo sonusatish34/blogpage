@@ -51,7 +51,7 @@ export default function AddPost() {
         },
       });
       console.log(response, "response");
-      const convimg = response?.data?.fileUrl.replace('https://ldcars.blr1.', 'https://ldcars.blr1.cdn.')
+      const convimg = response?.data?.fileUrl?.replace('https://ldcars.blr1.', 'https://ldcars.blr1.cdn.')
       // Set the uploaded image URL from the response
       setUploadedImageUrl(convimg);
     } catch (error) {
