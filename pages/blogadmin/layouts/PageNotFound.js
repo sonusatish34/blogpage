@@ -8,7 +8,7 @@ function NotFound()
                         <span class="sr-only">Error</span>404
                     </h2>
                     <p class="text-2xl md:text-3xl dark:text-gray-400">Sorry, we couldn't find this page.</p>
-                    <a href="http://localhost:3000/Admin" class="px-8 py-4 text-xl font-semibold rounded bg-purple-600 text-gray-50 hover:text-gray-200">Back to homepage</a>
+                    {/* <a href="http://localhost:3000/Admin" class="px-8 py-4 text-xl font-semibold rounded bg-purple-600 text-gray-50 hover:text-gray-200">Back to homepage</a> */}
                 </div>
             </div>
         </section>

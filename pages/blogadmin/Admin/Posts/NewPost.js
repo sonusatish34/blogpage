@@ -46,9 +46,9 @@ export default function AddPost() {
 
     // console.log(formData, "------------fdd---");
     try {
-            // const response = await axios.post('https://blogpage-theta.vercel.app/api/upload', formData, {
+            const response = await axios.post('https://blogpage-theta.vercel.app/api/upload', formData, {
 
-      const response = await axios.post('http://localhost:5000/upload', formData, {
+      // const response = await axios.post('http://localhost:5000/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -306,8 +306,8 @@ export default function AddPost() {
 
           // Send image file to backend (Node.js server)
           try {
-            // const response = await axios.post('https://blogpage-theta.vercel.app/api/upload', formData, {
-            const response = await fetch('http://localhost:5000/uploadei', {
+            const response = await axios.post('https://blogpage-theta.vercel.app/api/upload', formData, {
+            // const response = await fetch('http://localhost:5000/uploadei', {
               method: 'POST',
               body: formData,
             });
@@ -334,24 +334,7 @@ export default function AddPost() {
         };
       });
     }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      // Safe to use `document` and other browser-specific features
-      quillRef.current.getEditor().getModule('toolbar').addHandler('image', () => {
-        const input = document.createElement('input');
-        input.setAttribute('type', 'file');
-        input.setAttribute('accept', 'image/*');
-        input.click();
-  
-        input.onchange = async () => {
-          // handle image upload
-        };
-      });
-    }
-  }, []);
-  
+  }, []);  
 
 
   return (
