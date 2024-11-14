@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from "../../layouts/AdminLayout";
 import Domain from '../../Api/Api';
-import { AuthToken } from '../../Api/Api';
+// import { AuthToken } from '../../Api/Api';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFileAlt, faComments, faHeart, faEye, faUserCheck, faUser, faFolder } from "@fortawesome/free-solid-svg-icons";
 import { Line } from 'react-chartjs-2';
