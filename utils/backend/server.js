@@ -72,7 +72,7 @@ app.post('/upload', upload.single('coverimages'), (req, res) => {
     // Upload the file to DigitalOcean Spaces
     s3.upload(params, (err, data) => {
       if (err) {
-        return res.status(500).send('Error uploading file: ' + err);
+        return res.status(500).send('Error uploadingd file: ' + err);
       }
       // Send the file URL as a response
       res.status(200).send({ fileUrl: data.Location });
