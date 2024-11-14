@@ -9,7 +9,7 @@ import { CategoryScale } from "chart.js";
 import Chart from 'chart.js/auto';
 import Loading from '../../layouts/Loading';
 import axios from 'axios';
-import { fireDb } from '../../firebase';
+import { fireDb } from '../../../../utils/firebase';
 /* AnalyticsCard component */
 import { Timestamp, addDoc, collection, setDoc, getDocs, query, where, } from 'firebase/firestore';
 function AnalyticsCard({ title, value, icon }) {

@@ -5,10 +5,13 @@ import AdminLayout from '../../layouts/AdminLayout';
 import { Timestamp, addDoc, collection, setDoc, getDocs, query, where, } from 'firebase/firestore';
 // import Vio from "./Admin/Vio/TextEditor"
 import Vio from "../../Admin/Vio/TextEditor"
-import ReactQuill from 'react-quill';
+// import ReactQuill from 'react-quill';
+import dynamic from 'next/dynamic';
+const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
+
 import 'react-quill/dist/quill.snow.css'; // import styles
 import axios from 'axios'; // for handling image upload
-import { fireDb } from '../../firebase';
+import { fireDb } from '../../../../utils/firebase';
 
 export default function AddPost() {
   const [catgs, setCatgs] = useState('');
@@ -280,6 +283,7 @@ export default function AddPost() {
 
   useEffect(() => {
     // @ts-ignore
+    if (typeof window !== "undefined"){
     quillRef.current
       .getEditor()
       .getModule('toolbar')
@@ -329,7 +333,26 @@ export default function AddPost() {
           }
         };
       });
+    }
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Safe to use `document` and other browser-specific features
+      quillRef.current.getEditor().getModule('toolbar').addHandler('image', () => {
+        const input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/*');
+        input.click();
+  
+        input.onchange = async () => {
+          // handle image upload
+        };
+      });
+    }
+  }, []);
+  
+
 
   return (
     <AdminLayout>

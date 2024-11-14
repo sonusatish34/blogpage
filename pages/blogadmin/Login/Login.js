@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 // import { useNavigate } from "react-router-dom";
 import { getDocs, collection } from "firebase/firestore";
-import { fireDb } from "../firebase"; // Your Firebase config file
+import { fireDb } from "../../../utils/firebase"; // Your Firebase config file
 import { useRouter } from "next/router";
 function Login() {
   const [email, setEmail] = useState("admin@gmail.com");

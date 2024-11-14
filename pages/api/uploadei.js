@@ -2,7 +2,6 @@
 
 const AWS = require('aws-sdk');
 const multer = require('multer');
-const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 

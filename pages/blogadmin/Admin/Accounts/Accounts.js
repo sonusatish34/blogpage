@@ -5,7 +5,7 @@ import { faTrash, faPen, faEye, faPlus } from '@fortawesome/free-solid-svg-icons
 import Swal from 'sweetalert2';
 import Loading from '../../layouts/Loading';
 import { Timestamp, collection, getDocs ,setDoc,doc,deleteDoc } from 'firebase/firestore';
-import { fireDb } from '../../firebase';  // Make sure fireDb is correctly configured
+import { fireDb } from '../../../../utils/firebase';  // Make sure fireDb is correctly configured
 
 function UserAccountManager({ user, onUpdate, onDelete }) {
   const [updating, setUpdating] = useState(false);

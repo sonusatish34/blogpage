@@ -2,7 +2,7 @@ import { useParams } from "react-router-dom";
 import AdminLayout from "../../layouts/AdminLayout";
 import { useState, useEffect } from 'react';
 import { collection, doc, getDoc, deleteDoc } from "firebase/firestore";
-import { fireDb } from "../../firebase"; // Adjust this import according to your setup
+import { fireDb } from "../../../../utils/firebase"; // Adjust this import according to your setup
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import Swal from "sweetalert2";

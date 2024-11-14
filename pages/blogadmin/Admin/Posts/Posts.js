@@ -7,7 +7,7 @@ import Link from "next/link";
 import Swal from "sweetalert2";
 import Loading from "../../layouts/Loading";
 import { collection, getDocs, doc, deleteDoc } from "firebase/firestore";
-import { fireDb } from "../../firebase"; // Adjust this import according to your setup
+import { fireDb } from "../../../../utils/firebase"; // Adjust this import according to your setup
 
 function PostsData({ postsData, currentPage, itemsPerPage, setPostsData }) {
   const startIndex = (currentPage - 1) * itemsPerPage;
